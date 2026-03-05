@@ -1,46 +1,46 @@
 # YoloSkin
 
-[English README](./README.en.md)
+[简体中文 README](./README.zh-CN.md)
 
-YoloSkin 是一个 Minecraft 皮肤服务器，采用 Rust + Next.js 的前后端架构，提供皮肤/披风管理、角色管理、微软正版绑定、管理员后台以及 Yggdrasil 兼容接口。
+YoloSkin is a Minecraft skin server built with a Rust + Next.js architecture. It provides skin/cape management, player profile management, Microsoft account binding, admin tools, and Yggdrasil-compatible APIs.
 
-## 功能概览
+## Features
 
-- 用户注册、登录、会话认证
-- 角色创建与管理
-- 皮肤/披风上传、管理与衣柜收藏
-- 微软正版账号绑定与同步
-- 管理后台（用户、纹理、审计、站点设置、OAuth、邮箱设置）
-- Yggdrasil 认证相关接口
+- User registration, login, and session-based authentication
+- Player creation and management
+- Skin/cape upload, management, and closet collection
+- Microsoft premium account binding and sync
+- Admin console (users, textures, audit logs, site settings, OAuth, email settings)
+- Yggdrasil authentication endpoints
 
-## 技术栈
+## Tech Stack
 
-- 后端：Rust, Axum, Sea-ORM, PostgreSQL
-- 前端：Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS
-- 数据库迁移：sea-orm-migration
+- Backend: Rust, Axum, Sea-ORM, PostgreSQL
+- Frontend: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS
+- Migration: sea-orm-migration
 
-## 仓库结构
+## Repository Structure
 
 ```text
 .
 ├── crates/
-│   ├── server/      # Axum 服务
-│   ├── entity/      # Sea-ORM 实体
-│   └── migration/   # 数据库迁移
-├── web/             # Next.js 前端
+│   ├── server/      # Axum service
+│   ├── entity/      # Sea-ORM entities
+│   └── migration/   # Database migrations
+├── web/             # Next.js frontend
 ├── docker-compose.yml
 └── Cargo.toml       # Rust workspace
 ```
 
-## 快速开始
+## Quick Start
 
-### 1) 启动 PostgreSQL
+### 1) Start PostgreSQL
 
 ```bash
 docker compose up -d postgres
 ```
 
-### 2) 启动后端
+### 2) Start Backend
 
 ```bash
 export DATABASE_URL="postgres://skinserver:skinserver@localhost:5432/skinserver"
@@ -52,7 +52,7 @@ cargo run -p migration
 cargo run -p server
 ```
 
-### 3) 启动前端（开发）
+### 3) Start Frontend (Development)
 
 ```bash
 cd web
@@ -60,7 +60,7 @@ npm install
 npm run dev
 ```
 
-## 常用命令
+## Common Commands
 
 ### Rust
 
@@ -80,22 +80,22 @@ npm run build
 npm run lint
 ```
 
-## 关键环境变量（后端）
+## Key Backend Environment Variables
 
-- `DATABASE_URL`：PostgreSQL 连接串（必填）
-- `BIND_ADDR`：服务监听地址，默认 `127.0.0.1:3000`
-- `PUBLIC_BASE_URL`：公开访问基础 URL
-- `DATA_DIR`：纹理文件存储目录
-- `SESSION_SECRET`：会话签名密钥（生产环境必须设置）
-- `SESSION_COOKIE_NAME`：会话 Cookie 名称（默认 `gs_session`）
-- `SESSION_COOKIE_SECURE`：是否启用 Secure Cookie（`true/false`）
+- `DATABASE_URL`: PostgreSQL connection string (required)
+- `BIND_ADDR`: bind address, default `127.0.0.1:3000`
+- `PUBLIC_BASE_URL`: public base URL used by the service
+- `DATA_DIR`: texture file storage directory
+- `SESSION_SECRET`: session signing secret (must be set in production)
+- `SESSION_COOKIE_NAME`: cookie name (default `gs_session`)
+- `SESSION_COOKIE_SECURE`: enable secure cookie (`true/false`)
 
-## 部署说明
+## Deployment
 
-1. 构建前端：`cd web && npm run build`
-2. 构建后端：`cargo build --release -p server`
-3. 配置生产环境变量
-4. 执行迁移：`./target/release/migration`
-5. 启动服务：`./target/release/server`
+1. Build frontend: `cd web && npm run build`
+2. Build backend: `cargo build --release -p server`
+3. Configure production environment variables
+4. Run migration: `./target/release/migration`
+5. Start server: `./target/release/server`
 
-后端会提供 `/api` 接口，并从 `web/out` 提供静态前端文件。
+The backend serves API routes under `/api` and static frontend assets from `web/out`.
