@@ -1,7 +1,7 @@
 import { env, exports } from "cloudflare:workers"
 import { createExecutionContext, createMessageBatch, getQueueResult } from "cloudflare:test"
 import { describe, expect, it, vi } from "vitest"
-import { encryptSecret, sha256 } from "../worker/src/crypto"
+import { encryptSecret, hashPassword, sha256, verifyPassword } from "../worker/src/crypto"
 import { deliverPasswordResetEmail } from "../worker/src/services/email"
 import { handlePasswordResetQueue } from "../worker/src/queue"
 import type { PasswordResetQueueMessage } from "../worker/src/types"
@@ -30,6 +30,14 @@ function png64x64(): File {
 }
 
 describe("YoloSkin Worker", () => {
+  it("uses a Cloudflare-compatible PBKDF2 iteration count", async () => {
+    const password = "cloudflare-compatible-password"
+    const encoded = await hashPassword(password)
+    expect(encoded.split("$")[1]).toBe("100000")
+    expect(await verifyPassword(password, encoded)).toBe(true)
+    expect(await verifyPassword(password, encoded.replace("$100000$", "$100001$"))).toBe(false)
+  })
+
   it("serves the static homepage through the Worker security middleware", async () => {
     const response = await exports.default.fetch("https://example.com/")
     expect(response.status).toBe(200)

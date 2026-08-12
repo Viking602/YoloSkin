@@ -1,5 +1,6 @@
 const encoder = new TextEncoder()
-const PASSWORD_ITERATIONS = 210_000
+// Cloudflare Workers Web Crypto rejects PBKDF2 requests above 100,000 iterations.
+const PASSWORD_ITERATIONS = 100_000
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = ""
@@ -54,7 +55,14 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, encoded: string): Promise<boolean> {
   const [algorithm, iterationsText, saltText, expectedText] = encoded.split("$")
   const iterations = Number(iterationsText)
-  if (algorithm !== "pbkdf2_sha256" || !Number.isSafeInteger(iterations) || !saltText || !expectedText) return false
+  if (
+    algorithm !== "pbkdf2_sha256"
+    || !Number.isSafeInteger(iterations)
+    || iterations < 1
+    || iterations > PASSWORD_ITERATIONS
+    || !saltText
+    || !expectedText
+  ) return false
   const material = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"])
   const actual = await crypto.subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt: base64ToBytes(saltText), iterations },
