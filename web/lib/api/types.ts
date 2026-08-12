@@ -105,6 +105,11 @@ export interface OAuthStartData {
   url: string | null
 }
 
+export interface PasswordResetConfig {
+  enabled: boolean
+  turnstile_site_key: string
+}
+
 // 审计日志类型
 export interface AuditLog {
   id: number
@@ -146,54 +151,11 @@ export interface PublicSiteSettings {
   require_email_verification: boolean | null
 }
 
-export interface AdminOAuthSettings {
-  google_client_id: string | null
-  microsoft_client_id: string | null
-  google_enabled: boolean
-  microsoft_enabled: boolean
-  has_google_client_secret: boolean
-  has_microsoft_client_secret: boolean
-  has_oauth_state_secret: boolean
-}
-
-export interface UpdateAdminOAuthSettingsRequest {
-  google_client_id?: string
-  google_client_secret?: string
-  microsoft_client_id?: string
-  microsoft_client_secret?: string
-  oauth_state_secret?: string
-}
-
 export interface AdminUsersStats {
   total_users: number
   verified_users: number
   vip_users: number
   admin_users: number
-}
-
-export interface AdminEmailSettings {
-  smtp_host: string | null
-  smtp_port: number | null
-  smtp_username: string | null
-  smtp_from_name: string | null
-  smtp_from_email: string | null
-  smtp_use_tls: boolean
-  smtp_enabled: boolean
-  has_smtp_password: boolean
-  email_template_subject: string
-  email_template_html: string
-}
-
-export interface UpdateAdminEmailSettingsRequest {
-  smtp_host?: string
-  smtp_port?: number
-  smtp_username?: string
-  smtp_password?: string
-  smtp_from_name?: string
-  smtp_from_email?: string
-  smtp_use_tls?: boolean
-  email_template_subject?: string
-  email_template_html?: string
 }
 
 // 统计数据类型

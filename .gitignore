@@ -34,3 +34,9 @@ next-env.d.ts
 /web/out/
 /AGENTS.md
 /.crush/
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+web/out/
+web/.next/

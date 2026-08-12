@@ -422,6 +422,9 @@ export default {
     },
     sending: "Sending...",
     sendResetLink: "Send Reset Link",
+    passwordResetUnavailable: "Password recovery is not configured. Please contact the administrator.",
+    humanVerificationRequired: "Please complete the human verification first",
+    passwordResetGenericMessage: "If the address is registered, a password reset email will arrive shortly.",
     rememberedPassword: "Remembered your password?",
     backToLogin: "Back to Login",
     resetErrors: {

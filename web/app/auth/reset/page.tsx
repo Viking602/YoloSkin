@@ -1,221 +1,82 @@
 "use client"
 
-import React from "react"
-
-import { useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from "lucide-react"
+import { useEffect, useState } from "react"
+import { CheckCircle2, KeyRound, Loader2 } from "lucide-react"
+import { AuthCard } from "@/components/auth-card"
+import { TurnstileWidget } from "@/components/turnstile-widget"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AuthCard } from "@/components/auth-card"
-import { api } from "@/lib/api"
+import { getPasswordResetConfig, resetPassword } from "@/lib/api/services"
 import { useI18n } from "@/lib/i18n/context"
 
 export default function ResetPasswordPage() {
   const { t } = useI18n()
-  const [token, setToken] = useState<string | null>(null)
-  
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [token, setToken] = useState("")
+  const [siteKey, setSiteKey] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [confirmation, setConfirmation] = useState("")
+  const [turnstileToken, setTurnstileToken] = useState("")
+  const [resetKey, setResetKey] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [complete, setComplete] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
 
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setToken(params.get("token"))
-  }, [])
+  useEffect(() => {
+    const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get("token") ?? ""
+    setToken(fragmentToken)
+    if (!fragmentToken) setError(t("auth.resetInvalid.content"))
+    void getPasswordResetConfig().then((response) => {
+      if (response.code !== 0 || !response.data.enabled) return setError(t("auth.passwordResetUnavailable"))
+      setSiteKey(response.data.turnstile_site_key)
+    }).catch(() => setError(t("auth.passwordResetUnavailable")))
+  }, [t])
 
-  // 密码强度检查
-  const passwordStrength = {
-    hasLength: password.length >= 8,
-    hasNumber: /\d/.test(password),
-    hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-  }
-  const strengthScore = Object.values(passwordStrength).filter(Boolean).length
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (password !== confirmPassword) {
-      setError(t("auth.resetErrors.passwordMismatch"))
-      return
-    }
-
-    if (strengthScore < 2) {
-      setError(t("auth.resetErrors.passwordWeak"))
-      return
-    }
-
-    setIsLoading(true)
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (password.length < 8) return setError(t("auth.resetErrors.passwordWeak"))
+    if (password !== confirmation) return setError(t("auth.resetErrors.passwordMismatch"))
+    if (!turnstileToken) return setError(t("auth.humanVerificationRequired"))
+    setLoading(true)
     setError(null)
-
-    if (!token) {
-      setError(t("auth.resetErrors.invalidLink"))
-      setIsLoading(false)
-      return
-    }
-
     try {
-      const response = await api.resetPassword(token, password)
+      const response = await resetPassword(token, password, turnstileToken)
       if (response.code !== 0) {
         setError(response.message || t("auth.resetErrors.expired"))
+        setTurnstileToken("")
+        setResetKey((value) => value + 1)
         return
       }
-      setSuccess(true)
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("auth.resetErrors.expired"))
+      history.replaceState(null, "", window.location.pathname)
+      setComplete(true)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("auth.resetErrors.expired"))
+      setTurnstileToken("")
+      setResetKey((value) => value + 1)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
-  }
-
-  if (token === null) {
-    return null
-  }
-
-  if (!token) {
-    return (
-      <AuthCard title={t("auth.resetInvalid.title")} description={t("auth.resetInvalid.description")}>
-        <div className="text-center py-8">
-          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-destructive" />
-          </div>
-          <p className="text-muted-foreground mb-6">
-            {t("auth.resetInvalid.content")}
-          </p>
-          <Button asChild>
-            <Link href="/auth/forgot">{t("auth.resetInvalid.retry")}</Link>
-          </Button>
-        </div>
-      </AuthCard>
-    )
-  }
-
-  if (success) {
-    return (
-      <AuthCard title={t("auth.resetSuccess.title")} description={t("auth.resetSuccess.description")}>
-        <div className="text-center py-8">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-primary" />
-          </div>
-          <p className="text-muted-foreground mb-6">
-            {t("auth.resetSuccess.content")}
-          </p>
-          <Button asChild>
-            <Link href="/auth/login">{t("auth.goLogin")}</Link>
-          </Button>
-        </div>
-      </AuthCard>
-    )
   }
 
   return (
-    <AuthCard title={t("auth.resetPassword")} description={t("auth.resetPage.description")}>
-      {/* 错误提示 */}
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
+    <AuthCard title={complete ? t("auth.resetSuccess.title") : t("auth.resetPassword")} description={complete ? t("auth.resetSuccess.description") : t("auth.resetPage.description")}>
+      {complete ? (
+        <div className="space-y-5 text-center">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
+          <p className="text-sm text-muted-foreground">{t("auth.resetSuccess.content")}</p>
+          <Button asChild className="w-full"><Link href="/auth/login">{t("auth.goLogin")}</Link></Button>
         </div>
+      ) : (
+        <form onSubmit={submit} className="space-y-4">
+          {error && <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+          <div className="space-y-1.5"><Label htmlFor="newPassword">{t("auth.resetPage.newPassword")}</Label><div className="relative"><KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input id="newPassword" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className="pl-10" minLength={8} required /></div></div>
+          <div className="space-y-1.5"><Label htmlFor="confirmation">{t("auth.confirmPassword")}</Label><Input id="confirmation" type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} minLength={8} required /></div>
+          {siteKey && <TurnstileWidget siteKey={siteKey} action="password_reset_submit" resetKey={resetKey} onToken={setTurnstileToken} />}
+          <Button type="submit" className="w-full" disabled={loading || !token || !siteKey}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{loading ? t("auth.resetting") : t("auth.resetPassword")}</Button>
+          {!token && <p className="text-center text-sm"><Link href="/auth/forgot" className="font-medium text-primary hover:underline">{t("auth.resetInvalid.retry")}</Link></p>}
+        </form>
       )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">{t("auth.resetPage.newPassword")}</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-               placeholder={t("auth.resetPage.newPasswordPlaceholder")}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 bg-secondary border-border"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* 密码强度指示器 */}
-          {password && (
-            <div className="space-y-2">
-              <div className="flex gap-1">
-                {[1, 2, 3].map((level) => (
-                  <div
-                    key={level}
-                    className={`h-1 flex-1 rounded-full transition-colors ${
-                      strengthScore >= level
-                        ? strengthScore === 1
-                          ? "bg-destructive"
-                          : strengthScore === 2
-                            ? "bg-accent"
-                            : "bg-primary"
-                        : "bg-secondary"
-                    }`}
-                  />
-                ))}
-              </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className={passwordStrength.hasLength ? "text-primary" : ""}>
-                  {passwordStrength.hasLength ? "✓" : "○"} {t("auth.passwordRule.length")}
-                </div>
-                <div className={passwordStrength.hasNumber ? "text-primary" : ""}>
-                  {passwordStrength.hasNumber ? "✓" : "○"} {t("auth.passwordRule.number")}
-                </div>
-                <div className={passwordStrength.hasSpecial ? "text-primary" : ""}>
-                  {passwordStrength.hasSpecial ? "✓" : "○"} {t("auth.passwordRule.special")}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">{t("auth.confirmPassword")}</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-               placeholder={t("auth.resetPage.confirmPasswordPlaceholder")}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10 pr-10 bg-secondary border-border"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {password && confirmPassword && password !== confirmPassword && (
-            <p className="text-xs text-destructive">{t("auth.resetErrors.passwordMismatch")}</p>
-          )}
-        </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? t("auth.resetting") : t("auth.resetPassword")}
-        </Button>
-      </form>
-
-      <p className="text-center mt-6 text-sm text-muted-foreground">
-        {t("auth.rememberedPassword")} 
-        <Link href="/auth/login" className="text-primary font-medium hover:underline">
-          {t("auth.backToLogin")}
-        </Link>
-      </p>
     </AuthCard>
   )
 }

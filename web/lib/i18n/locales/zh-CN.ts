@@ -422,6 +422,9 @@ export default {
     },
     sending: "发送中...",
     sendResetLink: "发送重置链接",
+    passwordResetUnavailable: "密码找回服务尚未配置，请联系管理员",
+    humanVerificationRequired: "请先完成人机验证",
+    passwordResetGenericMessage: "如果该邮箱已注册，密码重置邮件将在几分钟内送达。",
     rememberedPassword: "想起密码了?",
     backToLogin: "返回登录",
     resetErrors: {

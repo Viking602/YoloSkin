@@ -77,11 +77,6 @@ export function Footer() {
                   {t("auth.register")}
                 </Link>
               </li>
-              <li>
-                <Link href="/auth/forgot" className="text-muted-foreground transition-colors hover:text-primary">
-                  {t("auth.forgotPassword")}
-                </Link>
-              </li>
             </ul>
           </div>
 

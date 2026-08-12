@@ -19,7 +19,6 @@ import {
   ImageIcon,
   FileText,
   Settings,
-  Mail,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LanguageSwitch } from "@/components/language-switch"
@@ -61,8 +60,6 @@ export default function UserLayout({
     { href: "/user/admin/textures", label: t.adminMenu.textures, icon: ImageIcon, description: t.adminMenu.texturesDesc },
     { href: "/user/admin/auditLogs", label: t.adminMenu.auditLogs, icon: FileText, description: t.adminMenu.auditLogsDesc },
     { href: "/user/admin/settings", label: t.adminMenu.siteSettings, icon: Settings, description: t.adminMenu.siteSettingsDesc },
-    { href: "/user/admin/oauth", label: t.adminMenu.oauth, icon: Key, description: t.adminMenu.oauthDesc },
-    { href: "/user/admin/email", label: t.adminMenu.email, icon: Mail, description: t.adminMenu.emailDesc },
   ]
 
   const allLinks = [...userLinks, ...(isAdmin ? adminLinks : [])]

@@ -1,0 +1,27 @@
+{
+  "name": "yoloskin-cloudflare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix web run build",
+    "check": "npm run typecheck && npm run test && npm run build && npm run deploy:dry-run",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:dry-run": "WRANGLER_LOG_PATH=/tmp/yoloskin-wrangler.log wrangler deploy --dry-run",
+    "dev": "npm run build && wrangler dev",
+    "d1:migrate:local": "wrangler d1 migrations apply yoloskin-db --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply yoloskin-db --remote",
+    "test": "WRANGLER_LOG_PATH=/tmp/yoloskin-wrangler.log vitest run",
+    "typecheck": "tsc --noEmit && WRANGLER_LOG_PATH=/tmp/yoloskin-wrangler.log wrangler types --check"
+  },
+  "dependencies": {
+    "hono": "^4.13.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.21.0",
+    "@cloudflare/workers-types": "^5.20260811.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.120.1"
+  }
+}

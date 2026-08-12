@@ -1,0 +1,90 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "yoloskin",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "yolo.skin",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.yolo.skin",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./web/out",
+    "run_worker_first": true,
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yoloskin-db",
+      "database_id": "594f8e39-48ab-45e5-a8c1-68547d195efb",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "TEXTURES",
+      "bucket_name": "yoloskin-textures"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["noreply@yolo.skin"]
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "PASSWORD_RESET_QUEUE",
+        "queue": "yoloskin-password-reset"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "yoloskin-password-reset",
+        "max_batch_size": 5,
+        "max_batch_timeout": 2,
+        "max_retries": 5,
+        "dead_letter_queue": "yoloskin-email-dlq"
+      }
+    ]
+  },
+  "ratelimits": [
+    {
+      "name": "PASSWORD_RESET_ACCOUNT_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 3, "period": 60 }
+    },
+    {
+      "name": "PASSWORD_RESET_IP_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
+  "triggers": {
+    "crons": ["0 3 * * *"]
+  },
+  "vars": {
+    "APP_ENV": "production",
+    "SESSION_TTL_SECONDS": "2592000",
+    "PUBLIC_BASE_URL": "https://yolo.skin",
+    "TURNSTILE_SITE_KEY": "",
+    "PASSWORD_RESET_TTL_SECONDS": "1200",
+    "PASSWORD_RESET_COOLDOWN_SECONDS": "60",
+    "MAIL_FROM": "noreply@yolo.skin"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+  }
+}

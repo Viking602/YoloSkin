@@ -1,315 +1,61 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Crown, RefreshCw, CheckCircle, Shield, Gamepad2, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { api } from "@/lib/api"
-import { useI18n } from "@/lib/i18n/context"
+import { Crown, Loader2, Unlink } from "lucide-react"
 import { toast } from "sonner"
-
-type BindStatus = "idle" | "loading" | "success" | "error"
-type BoundAccount = {
-  username: string
-  uuid: string
-  boundAt: string
-} | null
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { api, type PremiumBinding } from "@/lib/api"
 
 export default function PremiumPage() {
-  const { t } = useI18n()
-  const [bindStatus, setBindStatus] = useState<BindStatus>("idle")
-  const [syncStatus, setSyncStatus] = useState<BindStatus>("idle")
-  const [boundAccount, setBoundAccount] = useState<BoundAccount>(null)
-  const [oauthEnabled, setOauthEnabled] = useState({ google: false, microsoft: false })
+  const [binding, setBinding] = useState<PremiumBinding | null>(null)
+  const [token, setToken] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    const loadBinding = async () => {
-      try {
-        const [response, providerResponse] = await Promise.all([
-          api.getPremiumBinding(),
-          api.getOAuthProviders(),
-        ])
-        if (response.code === 0 && response.data) {
-          setBoundAccount({
-            username: response.data.username,
-            uuid: response.data.uuid,
-            boundAt: response.data.bound_at,
-          })
-        }
-
-        if (providerResponse.code === 0) {
-          setOauthEnabled(providerResponse.data)
-        }
-      } catch {
-        toast.error(t("premium.errors.loadFailed"))
-      }
-    }
-
-    loadBinding()
-  }, [t])
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get("bind") === "success") {
-      setBindStatus("success")
-    }
-    const oauthError = params.get("oauth_error")
-    if (oauthError) {
-      setBindStatus("error")
-      toast.error(decodeURIComponent(oauthError))
-    }
+    void api.getPremiumBinding().then((response) => {
+      if (response.code === 0) setBinding(response.data)
+    }).finally(() => setLoading(false))
   }, [])
 
-  const handleMicrosoftLogin = async () => {
-    if (!oauthEnabled.microsoft) return
-
-    setBindStatus("loading")
-
+  const bind = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setSaving(true)
     try {
-      const response = await api.getOAuthStartUrl("microsoft", "bind_premium")
-      if (response.code !== 0 || !response.data.url) {
-        setBindStatus("error")
-        toast.error(response.message || t("premium.errors.bindFailed"))
-        return
-      }
-      window.location.href = response.data.url
-    } catch (err) {
-      setBindStatus("error")
-      toast.error(err instanceof Error && err.message ? err.message : t("premium.errors.oauthLoginFailed"))
+      const response = await api.bindPremium({ microsoft_token: token.trim() })
+      if (response.code !== 0) return toast.error(response.message)
+      setBinding(response.data)
+      setToken("")
+      toast.success("正版 Minecraft 档案已绑定")
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleUnbind = async () => {
-    setBindStatus("loading")
+  const unbind = async () => {
+    setSaving(true)
     try {
       const response = await api.unbindPremium()
-      if (response.code !== 0) {
-        setBindStatus("error")
-        toast.error(response.message || t("premium.errors.unbindFailed"))
-        return
-      }
-      setBoundAccount(null)
-      setBindStatus("idle")
-    } catch (err) {
-      setBindStatus("error")
-      toast.error(err instanceof Error && err.message ? err.message : t("premium.errors.unbindFailed"))
+      if (response.code !== 0) return toast.error(response.message)
+      setBinding(null)
+      toast.success("绑定已解除")
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleSync = async () => {
-    setSyncStatus("loading")
-
-    try {
-      const response = await api.syncPremiumSkin()
-      if (response.code !== 0) {
-        setSyncStatus("error")
-        toast.error(response.message || t("premium.errors.syncFailed"))
-        return
-      }
-      setSyncStatus("success")
-      toast.success(t("premium.syncSuccess"))
-      setTimeout(() => setSyncStatus("idle"), 3000)
-    } catch (err) {
-      setSyncStatus("error")
-      toast.error(err instanceof Error && err.message ? err.message : t("premium.errors.syncFailed"))
-    }
-  }
+  if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("premium.title")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t("premium.description")}
-          </p>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* 绑定状态卡片 */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Crown className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-                <h2 className="text-lg font-semibold text-foreground">{t("premium.microsoftAccount")}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {boundAccount ? t("premium.bound") : t("premium.loginToBind")}
-                </p>
-              </div>
-            </div>
-
-          {boundAccount ? (
-            <>
-              {/* 已绑定状态 */}
-              <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Gamepad2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground">{boundAccount.username}</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">{boundAccount.uuid}</p>
-                  </div>
-                  <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {t("premium.boundAt")}：{boundAccount.boundAt}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleSync}
-                  disabled={syncStatus === "loading"}
-                  className="flex-1 gap-2"
-                >
-                  <RefreshCw className={`w-4 h-4 ${syncStatus === "loading" ? "animate-spin" : ""}`} />
-                  {syncStatus === "loading" ? t("premium.syncing") : t("premium.syncSkin")}
-                </Button>
-                <Button
-                  onClick={handleUnbind}
-                  variant="outline"
-                  disabled={bindStatus === "loading"}
-                  className="bg-transparent"
-                >
-                  {t("premium.unbind")}
-                </Button>
-              </div>
-
-              {syncStatus === "success" && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm">{t("premium.syncSuccess")}</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {/* 未绑定状态 */}
-              <div className="rounded-xl bg-secondary/50 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="w-4 h-4" />
-                  <span>{t("premium.secureOauth")}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {t("premium.oauthDescription")}
-                </p>
-              </div>
-
-              <Button
-                onClick={handleMicrosoftLogin}
-                disabled={bindStatus === "loading" || !oauthEnabled.microsoft}
-                className="w-full h-11 gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {bindStatus === "loading" ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    {t("premium.loggingIn")}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" viewBox="0 0 23 23">
-                      <path fill="#f35325" d="M1 1h10v10H1z" />
-                      <path fill="#81bc06" d="M12 1h10v10H12z" />
-                      <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                      <path fill="#ffba08" d="M12 12h10v10H12z" />
-                    </svg>
-                    {t("premium.bindWithMicrosoft")}
-                  </>
-                )}
-              </Button>
-              {!oauthEnabled.microsoft && (
-                <p className="text-xs text-muted-foreground text-center">
-                  {t("premium.microsoftDisabledHint")}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* 功能说明 */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-accent" />
-            </div>
-            <div>
-               <h2 className="text-lg font-semibold text-foreground">{t("premium.benefits")}</h2>
-               <p className="text-sm text-muted-foreground">{t("premium.benefitsDesc")}</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckCircle className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                 <h4 className="text-sm font-medium text-foreground">{t("premium.benefitSyncTitle")}</h4>
-                 <p className="text-sm text-muted-foreground mt-0.5">
-                   {t("premium.benefitSyncDesc")}
-                 </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckCircle className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                 <h4 className="text-sm font-medium text-foreground">{t("premium.benefitBadgeTitle")}</h4>
-                 <p className="text-sm text-muted-foreground mt-0.5">
-                   {t("premium.benefitBadgeDesc")}
-                 </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckCircle className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                 <h4 className="text-sm font-medium text-foreground">{t("premium.benefitStorageTitle")}</h4>
-                 <p className="text-sm text-muted-foreground mt-0.5">
-                   {t("premium.benefitStorageDesc")}
-                 </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 常见问题 */}
-      <div className="rounded-xl border border-border bg-card p-6">
-         <h3 className="text-lg font-semibold text-foreground mb-4">{t("premium.faqTitle")}</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-             <h4 className="text-sm font-medium text-foreground">{t("premium.faq1Title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("premium.faq1Desc")}
-             </p>
-          </div>
-          <div className="space-y-1">
-             <h4 className="text-sm font-medium text-foreground">{t("premium.faq2Title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("premium.faq2Desc")}
-             </p>
-          </div>
-          <div className="space-y-1">
-             <h4 className="text-sm font-medium text-foreground">{t("premium.faq3Title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("premium.faq3Desc")}
-             </p>
-          </div>
-          <div className="space-y-1">
-             <h4 className="text-sm font-medium text-foreground">{t("premium.faq4Title")}</h4>
-             <p className="text-sm text-muted-foreground">
-               {t("premium.faq4Desc")}
-             </p>
-          </div>
-        </div>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-amber-400/30 bg-amber-400/10"><Crown className="h-6 w-6 text-amber-500" /></div><div><h1 className="text-2xl font-bold">正版档案绑定</h1><p className="text-sm text-muted-foreground">通过 Minecraft Services 直接校验访问令牌。</p></div></div>
+      {binding ? (
+        <div className="mc-card space-y-4 p-6"><div><p className="text-sm text-muted-foreground">已绑定角色</p><p className="text-xl font-semibold">{binding.username}</p><p className="font-mono text-xs text-muted-foreground">{binding.uuid}</p></div><Button variant="outline" onClick={() => void unbind()} disabled={saving}><Unlink className="mr-2 h-4 w-4" />解除绑定</Button></div>
+      ) : (
+        <form onSubmit={bind} className="mc-card space-y-5 p-6"><div className="space-y-2"><Label htmlFor="minecraftToken">Minecraft Services Access Token</Label><Input id="minecraftToken" type="password" value={token} onChange={(event) => setToken(event.target.value)} minLength={20} required /><p className="text-xs text-muted-foreground">令牌仅用于验证档案并保存在 D1；建议绑定完成后在 Microsoft 账户中撤销旧令牌。</p></div><Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}验证并绑定</Button></form>
+      )}
     </div>
   )
 }

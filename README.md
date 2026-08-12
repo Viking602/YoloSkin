@@ -1,101 +1,133 @@
-# YoloSkin
+# YoloSkin Cloudflare
 
-[简体中文 README](./README.zh-CN.md)
+YoloSkin 是一个完全由 Cloudflare 托管的 Minecraft 皮肤服务：
 
-YoloSkin is a Minecraft skin server built with a Rust + Next.js architecture. It provides skin/cape management, player profile management, Microsoft account binding, admin tools, and Yggdrasil-compatible APIs.
+- Cloudflare Workers：HTTP API、认证、管理后台接口和 Yggdrasil 协议。
+- Cloudflare D1：用户、会话、角色、纹理元数据、衣柜、设置和审计日志。
+- Cloudflare R2：PNG 皮肤与披风对象。
+- Cloudflare Email Service：发送密码重置事务邮件。
+- Cloudflare Queues：异步投递邮件、自动重试与死信处理。
+- Cloudflare Turnstile 与 Workers Rate Limiting：保护找回密码接口。
+- Workers Static Assets：同一个 Worker 域名托管 `web/out` 静态前端。
 
-## Features
+项目不再包含 Rust、PostgreSQL、本地文件系统或 Docker 运行链。
 
-- User registration, login, and session-based authentication
-- Player creation and management
-- Skin/cape upload, management, and closet collection
-- Microsoft premium account binding and sync
-- Admin console (users, textures, audit logs, site settings, OAuth, email settings)
-- Yggdrasil authentication endpoints
+## 本地开发
 
-## Tech Stack
-
-- Backend: Rust, Axum, Sea-ORM, PostgreSQL
-- Frontend: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS
-- Migration: sea-orm-migration
-
-## Repository Structure
-
-```text
-.
-├── crates/
-│   ├── server/      # Axum service
-│   ├── entity/      # Sea-ORM entities
-│   └── migration/   # Database migrations
-├── web/             # Next.js frontend
-├── docker-compose.yml
-└── Cargo.toml       # Rust workspace
-```
-
-## Quick Start
-
-### 1) Start PostgreSQL
+要求 Node.js 22+。
 
 ```bash
-docker compose up -d postgres
-```
-
-### 2) Start Backend
-
-```bash
-export DATABASE_URL="postgres://skinserver:skinserver@localhost:5432/skinserver"
-export BIND_ADDR="127.0.0.1:3000"
-export PUBLIC_BASE_URL="http://localhost:3000"
-export DATA_DIR="./data"
-
-cargo run -p migration
-cargo run -p server
-```
-
-### 3) Start Frontend (Development)
-
-```bash
-cd web
 npm install
+npm --prefix web install
+cp .dev.vars.example .dev.vars
+npm run build
+npm run d1:migrate:local
 npm run dev
 ```
 
-## Common Commands
+Wrangler 默认在 `.wrangler/state` 中模拟 D1、R2、Queues 和 Email Service。本地邮件不会真实发送，正文会记录到 Wrangler 输出指示的临时文件。本地站点为 `http://localhost:8787`。
 
-### Rust
+## Cloudflare 资源初始化
 
-```bash
-cargo check --workspace --all-targets
-RUSTFLAGS="-Dwarnings" cargo check --workspace --all-targets
-cargo run -p migration
-cargo run -p server
-```
-
-### Frontend
+登录并创建 D1、R2 和邮件队列：
 
 ```bash
-cd web
-npx tsc --noEmit
-npm run build
-npm run lint
+npx wrangler login
+npx wrangler d1 create yoloskin-db
+npx wrangler r2 bucket create yoloskin-textures
+npx wrangler queues create yoloskin-password-reset
+npx wrangler queues create yoloskin-email-dlq
 ```
 
-## Key Backend Environment Variables
+把 `wrangler d1 create` 返回的 UUID 写入 `wrangler.jsonc` 的 `database_id`，替换全零占位值。然后执行：
 
-- `DATABASE_URL`: PostgreSQL connection string (required)
-- `BIND_ADDR`: bind address, default `127.0.0.1:3000`
-- `PUBLIC_BASE_URL`: public base URL used by the service
-- `DATA_DIR`: texture file storage directory
-- `SESSION_SECRET`: session signing secret (must be set in production)
-- `SESSION_COOKIE_NAME`: cookie name (default `gs_session`)
-- `SESSION_COOKIE_SECURE`: enable secure cookie (`true/false`)
+```bash
+npm run d1:migrate:remote
+```
 
-## Deployment
+### 密码找回资源
 
-1. Build frontend: `cd web && npm run build`
-2. Build backend: `cargo build --release -p server`
-3. Configure production environment variables
-4. Run migration: `./target/release/migration`
-5. Start server: `./target/release/server`
+1. 在 Cloudflare 控制台创建 Turnstile Widget，将正式 Site Key 写入 `wrangler.jsonc` 的 `TURNSTILE_SITE_KEY`。
+2. 在 Cloudflare Email Service 中接入用于发信的域名或子域名。
+3. 把 `wrangler.jsonc` 中两处 `noreply@example.com` 同时替换成已接入的发件地址。
+4. 把 `PUBLIC_BASE_URL` 改为正式 HTTPS 域名。重置邮件始终使用这个固定地址生成链接，不读取请求的 Host。
 
-The backend serves API routes under `/api` and static frontend assets from `web/out`.
+Cloudflare 向任意收件人发送事务邮件需要 Workers Paid；Email Sending 当前仍为 Beta。未完成这些配置时，密码找回页面会明确显示服务不可用。
+
+可选的 OAuth 与 Yggdrasil 签名密钥只能通过 Workers Secrets 配置，不能写入仓库或 D1：
+
+```bash
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put MICROSOFT_CLIENT_SECRET
+npx wrangler secret put OAUTH_STATE_SECRET
+npx wrangler secret put TURNSTILE_SECRET_KEY
+npx wrangler secret put RESET_TOKEN_ENCRYPTION_KEY
+npx wrangler secret put PASSWORD_RESET_RATE_KEY
+npx wrangler secret put YGGDRASIL_PRIVATE_KEY
+npx wrangler secret put YGGDRASIL_PUBLIC_KEY
+```
+
+Yggdrasil RSA 密钥可这样生成：
+
+```bash
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out yggdrasil-private.pem
+openssl rsa -pubout -in yggdrasil-private.pem -out yggdrasil-public.pem
+```
+
+把私钥与公钥分别粘贴给对应的 `wrangler secret put`，随后安全删除本地 PEM 文件。
+
+`RESET_TOKEN_ENCRYPTION_KEY` 和 `PASSWORD_RESET_RATE_KEY` 应分别使用独立的高熵随机值，例如先执行 `openssl rand -base64 32` 生成，再交互式粘贴给 `wrangler secret put`。不要将结果写入仓库。
+
+## 找回密码流程
+
+1. 用户在 `/auth/forgot` 提交邮箱并完成 Turnstile。
+2. Worker 始终返回相同的 `202` 响应，避免泄漏账号是否存在。
+3. 有效账号获得一个 20 分钟、单次使用的随机令牌；D1 只长期保存 SHA-256 摘要。
+4. Queue Consumer 使用 Email Service 发送邮件，失败最多重试五次，之后进入 `yoloskin-email-dlq`。
+5. 用户通过 `/auth/reset/#token=...` 设置新密码。URL Fragment 不会随静态页面请求进入访问日志。
+6. 重置成功后，全部网页登录 Session 和 Yggdrasil Token 会在同一个 D1 事务中撤销。
+
+同一账号始终只有最新链接有效。令牌投递前使用 AES-GCM 临时加密，邮件成功后立即从 D1 清除密文。
+
+## 首位管理员
+
+注册第一个账号后，用 D1 CLI 提升权限：
+
+```bash
+npx wrangler d1 execute yoloskin-db --remote --command "UPDATE users SET permission = 2 WHERE email = 'admin@example.com'"
+```
+
+## 验证与部署
+
+```bash
+npm run check
+npm run deploy
+```
+
+`npm run check` 会依次执行 Worker 类型检查、绑定类型漂移检查、测试、Next 静态导出和 Wrangler dry-run。
+
+部署后把 `wrangler.jsonc` 的 `PUBLIC_BASE_URL` 改为正式自定义域名。Yggdrasil 基础地址为：
+
+```text
+https://your-domain.example/api/yggdrasil
+```
+
+## 数据与安全约束
+
+- 登录态使用 `HttpOnly`、`SameSite=Lax` Cookie；D1 只保存令牌 SHA-256 摘要。
+- 密码使用 Web Crypto PBKDF2-SHA256（210,000 次迭代）。
+- 纹理上传上限 2 MiB，并校验 PNG 签名与 Minecraft 尺寸。
+- R2 响应直接流式返回，不把对象整体读入 Worker 内存。
+- OAuth 与 RSA 密钥通过 Wrangler secrets 注入。
+- 找回密码使用 Turnstile、账号/IP 限流、D1 全局冷却和统一响应防止滥用与账号枚举。
+- 重置密码采用一次性令牌，并在 D1 事务中撤销现有会话。
+- 默认不要求注册邮箱验证；找回密码邮件本身会验证用户对该邮箱的控制权。
+
+## 目录
+
+```text
+worker/src/          Worker 入口、通用能力、服务和路由
+migrations/          D1 SQL migrations
+web/                 Next.js 静态前端
+wrangler.jsonc       Workers、D1、R2、Assets 和可观测性配置
+```
