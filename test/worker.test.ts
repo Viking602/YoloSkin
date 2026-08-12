@@ -30,6 +30,13 @@ function png64x64(): File {
 }
 
 describe("YoloSkin Worker", () => {
+  it("serves the static homepage through the Worker security middleware", async () => {
+    const response = await exports.default.fetch("https://example.com/")
+    expect(response.status).toBe(200)
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff")
+    expect(await response.text()).toContain("YoloSkin")
+  })
+
   it("reports Cloudflare bindings as healthy", async () => {
     const response = await exports.default.fetch("https://example.com/api/health")
     expect(response.status).toBe(200)

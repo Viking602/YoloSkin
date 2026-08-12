@@ -32,9 +32,10 @@ app.route("/api/yggdrasil", yggdrasilRoutes)
 
 app.get("/textures/:hash", serveTexture)
 
-app.notFound((c) => {
+app.notFound(async (c) => {
   if (new URL(c.req.url).pathname.startsWith("/api/")) return failure(c, 404, "API route not found")
-  return c.env.ASSETS.fetch(c.req.raw)
+  const asset = await c.env.ASSETS.fetch(c.req.raw)
+  return new Response(asset.body, asset)
 })
 
 app.onError((error, c) => {
