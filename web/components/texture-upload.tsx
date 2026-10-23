@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
+import type { ChangeEvent, DragEvent } from "react"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Upload, X, CheckCircle, Copy, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -17,6 +17,8 @@ interface UploadResult {
 
 interface TextureUploadProps {
   onUpload: (file: File) => Promise<UploadResult>
+  onReset?: () => void
+  onFileChange?: (file: File | null, previewUrl: string | null) => void
   accept?: string
   maxSize?: number // in MB
   disabled?: boolean
@@ -25,12 +27,15 @@ interface TextureUploadProps {
 
 export function TextureUpload({
   onUpload,
+  onReset,
+  onFileChange,
   accept = "image/png",
   maxSize = 2,
   disabled = false,
   rateLimitError = false,
 }: TextureUploadProps) {
   const { t } = useI18n()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -40,7 +45,7 @@ export function TextureUpload({
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
+  const handleDrag = useCallback((e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -61,6 +66,7 @@ export function TextureUpload({
   }
 
   const handleFile = useCallback((file: File) => {
+    if (disabled || isUploading) return
     const validationError = validateFile(file)
     if (validationError) {
       setError(validationError)
@@ -68,17 +74,20 @@ export function TextureUpload({
     }
 
     setFile(file)
+    onReset?.()
     setError(null)
     setResult(null)
 
     const reader = new FileReader()
     reader.onload = (e) => {
-      setPreview(e.target?.result as string)
+      const nextPreview = e.target?.result as string
+      setPreview(nextPreview)
+      onFileChange?.(file, nextPreview)
     }
     reader.readAsDataURL(file)
-  }, [maxSize])
+  }, [accept, maxSize, onReset, onFileChange, t, disabled, isUploading])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
@@ -89,7 +98,7 @@ export function TextureUpload({
     }
   }, [handleFile])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
       handleFile(selectedFile)
@@ -127,6 +136,9 @@ export function TextureUpload({
   }
 
   const handleReset = () => {
+    onReset?.()
+    onFileChange?.(null, null)
+    if (inputRef.current) inputRef.current.value = ""
     setFile(null)
     setPreview(null)
     setResult(null)
@@ -163,56 +175,62 @@ export function TextureUpload({
             <h4 className="font-medium text-foreground mb-3">{t("textureUpload.successTitle")}</h4>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between gap-2 p-2 rounded bg-secondary">
-                <span className="text-muted-foreground">TID:</span>
+                <span className="text-muted-foreground">TID</span>
                 <div className="flex items-center gap-2">
                   <code className="text-foreground">{result.tid}</code>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
+                    size="sm"
+                    className="h-7 px-2"
                     onClick={() => handleCopy(String(result.tid), "tid")}
+                    aria-label={t("common.copyTid")}
                   >
                     {copied === "tid" ? (
                       <CheckCircle className="w-3 h-3 text-primary" />
                     ) : (
                       <Copy className="w-3 h-3" />
                     )}
+                    <span>{copied === "tid" ? t("common.copied") : t("common.copy")}</span>
                   </Button>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-2 p-2 rounded bg-secondary">
-                <span className="text-muted-foreground">Hash:</span>
+                <span className="text-muted-foreground">Hash</span>
                 <div className="flex items-center gap-2">
                   <code className="text-foreground truncate max-w-[200px]">{result.hash}</code>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
+                    size="sm"
+                    className="h-7 px-2"
                     onClick={() => handleCopy(result.hash, "hash")}
+                    aria-label={t("common.copyHash")}
                   >
                     {copied === "hash" ? (
                       <CheckCircle className="w-3 h-3 text-primary" />
                     ) : (
                       <Copy className="w-3 h-3" />
                     )}
+                    <span>{copied === "hash" ? t("common.copied") : t("common.copy")}</span>
                   </Button>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-2 p-2 rounded bg-secondary">
-                <span className="text-muted-foreground">URL:</span>
+                <span className="text-muted-foreground">URL</span>
                 <div className="flex items-center gap-2">
                   <code className="text-foreground truncate max-w-[200px]">{result.url}</code>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
+                    size="sm"
+                    className="h-7 px-2"
                     onClick={() => handleCopy(result.url, "url")}
+                    aria-label={t("common.copyUrl")}
                   >
                     {copied === "url" ? (
                       <CheckCircle className="w-3 h-3 text-primary" />
                     ) : (
                       <Copy className="w-3 h-3" />
                     )}
+                    <span>{copied === "url" ? t("common.copied") : t("common.copy")}</span>
                   </Button>
                 </div>
               </div>
@@ -230,7 +248,7 @@ export function TextureUpload({
     <div className="space-y-4">
       <div
         className={cn(
-          "relative rounded-lg border-2 border-dashed transition-colors",
+          "relative rounded-xl border-2 border-dashed bg-background/60 transition-colors",
           isDragging ? "border-primary bg-primary/5" : "border-border",
           disabled && "opacity-50 cursor-not-allowed"
         )}
@@ -240,6 +258,7 @@ export function TextureUpload({
         onDrop={handleDrop}
       >
         <input
+          ref={inputRef}
           type="file"
           accept={accept}
           onChange={handleInputChange}
@@ -252,14 +271,16 @@ export function TextureUpload({
             <div className="relative">
               <img
                 src={preview || "/placeholder.svg"}
-                alt="Preview"
+                alt={file?.name || t("upload.previewTitle")}
                 className="w-32 h-32 object-contain rounded-lg bg-secondary"
                 style={{ imageRendering: "pixelated" }}
               />
               <Button
                 variant="destructive"
+                disabled={isUploading}
                 size="icon"
                 className="absolute -top-2 -right-2 h-6 w-6"
+                aria-label={t("common.reset")}
                 onClick={(e) => {
                   e.stopPropagation()
                   handleReset()
@@ -270,7 +291,7 @@ export function TextureUpload({
             </div>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+              <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center mb-4">
                 <Upload className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-foreground font-medium mb-1">
@@ -294,7 +315,7 @@ export function TextureUpload({
         <div className="space-y-2">
           <Progress value={progress} className="h-2" />
           <p className="text-sm text-muted-foreground text-center">
-            {t("textureUpload.uploading")} {progress}%
+            {t("textureUpload.uploading")} {progress}{t("units.percent")}
           </p>
         </div>
       )}

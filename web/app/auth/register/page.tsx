@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import type { FormEvent } from "react"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -26,7 +26,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!agreeTerms) {
       setError(t("auth.registerErrors.mustAgreeTerms"))
@@ -39,7 +39,7 @@ export default function RegisterPage() {
     try {
       const response = await api.register(email.trim(), password, nickname.trim())
       if (response.code !== 0) {
-        if (response.message === "Email already exists") {
+        if (response.code === 409) {
           setError(t("auth.registerErrors.emailExists"))
           return
         }
@@ -100,6 +100,7 @@ export default function RegisterPage() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -116,6 +117,8 @@ export default function RegisterPage() {
             <Input
               id="nickname"
               type="text"
+              autoComplete="nickname"
+              maxLength={64}
                placeholder={t("auth.nicknamePlaceholder")}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
@@ -132,6 +135,9 @@ export default function RegisterPage() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={256}
                placeholder={t("auth.registerPage.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -142,6 +148,7 @@ export default function RegisterPage() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPassword ? t("common.hidePassword") : t("common.showPassword")}
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />

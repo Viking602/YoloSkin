@@ -1,15 +1,18 @@
 {
-  "name": "my-v0-project",
+  "name": "yoloskin-web",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "bun@1.4.0",
   "scripts": {
     "build": "BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@daidr/minecraft-skin-renderer": "^0.2.2",
+    "@fontsource-variable/manrope": "^5.3.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -46,11 +49,11 @@
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "next": "^16.3.0",
+    "next": "^16.4.2",
     "next-themes": "^0.4.6",
-    "react": "^19.2.8",
+    "react": "^19.3.1",
     "react-day-picker": "9.8.0",
-    "react-dom": "^19.2.8",
+    "react-dom": "^19.3.1",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.4",
@@ -61,14 +64,18 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.9",
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "baseline-browser-mapping": "^2.9.19",
-    "postcss": "^8.5.26",
-    "tailwindcss": "^4.1.9",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^4.3.3",
     "tw-animate-css": "1.3.3",
-    "typescript": "^5"
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=22.12.0",
+    "bun": ">=1.4.0"
   }
 }

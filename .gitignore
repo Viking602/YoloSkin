@@ -8,6 +8,8 @@ web/node_modules/
 # next.js
 /.next/
 web/.next/
+.playwright-cli/
+output/playwright/
 /out/
 web/out/
 

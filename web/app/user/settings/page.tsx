@@ -1,14 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { KeyRound, Loader2, ShieldCheck } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FormBanner, PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { api } from "@/lib/api"
+import { useI18n } from "@/lib/i18n/context"
 
 export default function SettingsPage() {
+  const { t } = useI18n()
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmation, setConfirmation] = useState("")
@@ -16,8 +19,8 @@ export default function SettingsPage() {
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (newPassword.length < 8) return toast.error("新密码至少需要 8 个字符")
-    if (newPassword !== confirmation) return toast.error("两次输入的新密码不一致")
+    if (newPassword.length < 8) return toast.error(t("settings.passwordTooShort"))
+    if (newPassword !== confirmation) return toast.error(t("settings.passwordMismatch"))
     setSaving(true)
     try {
       const response = await api.changePassword(currentPassword, newPassword)
@@ -25,27 +28,68 @@ export default function SettingsPage() {
       setCurrentPassword("")
       setNewPassword("")
       setConfirmation("")
-      toast.success("密码已更新，其他登录会话已退出")
+      toast.success(t("settings.passwordUpdated"))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "更新密码失败")
+      toast.error(error instanceof Error ? error.message : t("settings.errors.setPasswordFailed"))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-primary/20 bg-primary/10"><KeyRound className="h-6 w-6 text-primary" /></div>
-        <div><h1 className="text-2xl font-bold">账户安全</h1><p className="text-sm text-muted-foreground">密码由 Web Crypto 加密，会话保存在 Cloudflare D1。</p></div>
-      </div>
-      <form onSubmit={save} className="mc-card space-y-5 p-6">
-        <div className="flex items-center gap-2 border-b border-border pb-4"><ShieldCheck className="h-5 w-5 text-primary" /><h2 className="font-semibold">修改登录密码</h2></div>
-        <div className="space-y-2"><Label htmlFor="currentPassword">当前密码</Label><Input id="currentPassword" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} minLength={8} required /></div>
-        <div className="space-y-2"><Label htmlFor="newPassword">新密码</Label><Input id="newPassword" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} required /></div>
-        <div className="space-y-2"><Label htmlFor="confirmation">确认新密码</Label><Input id="confirmation" type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} minLength={8} required /></div>
-        <Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}保存新密码</Button>
-      </form>
-    </div>
+    <PageStack>
+      <PageHeader title={t("settings.title")} description={t("settings.description")} />
+      <PagePanel className="mx-auto w-full max-w-xl space-y-5">
+        <div>
+          <h2 className="panel-title">{t("settings.changePassword")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{t("settings.securityNote")}</p>
+        </div>
+        <form onSubmit={(event) => void save(event)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">{t("settings.currentPassword")}</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">{t("settings.newPassword")}</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmation">{t("settings.confirmNewPassword")}</Label>
+            <Input
+              id="confirmation"
+              type="password"
+              autoComplete="new-password"
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+              minLength={8}
+              required
+            />
+            {confirmation && newPassword !== confirmation ? (
+              <FormBanner>{t("settings.passwordMismatch")}</FormBanner>
+            ) : null}
+          </div>
+          <Button type="submit" disabled={saving}>
+            {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+            {saving ? t("settings.savingPassword") : t("settings.savePassword")}
+          </Button>
+        </form>
+      </PagePanel>
+    </PageStack>
   )
 }

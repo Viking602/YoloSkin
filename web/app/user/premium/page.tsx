@@ -1,23 +1,31 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Crown, Loader2, Unlink } from "lucide-react"
+import { Loader2, Unlink } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { LoadingState } from "@/components/state-views"
+import { CopyButton } from "@/components/copy-button"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { api, type PremiumBinding } from "@/lib/api"
+import { useI18n } from "@/lib/i18n/context"
 
 export default function PremiumPage() {
+  const { t } = useI18n()
   const [binding, setBinding] = useState<PremiumBinding | null>(null)
   const [token, setToken] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    void api.getPremiumBinding().then((response) => {
-      if (response.code === 0) setBinding(response.data)
-    }).finally(() => setLoading(false))
+    void api
+      .getPremiumBinding()
+      .then((response) => {
+        if (response.code === 0) setBinding(response.data)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   const bind = async (event: React.FormEvent) => {
@@ -25,10 +33,10 @@ export default function PremiumPage() {
     setSaving(true)
     try {
       const response = await api.bindPremium({ microsoft_token: token.trim() })
-      if (response.code !== 0) return toast.error(response.message)
+      if (response.code !== 0) return toast.error(response.message || t("premium.errors.bindFailed"))
       setBinding(response.data)
       setToken("")
-      toast.success("正版 Minecraft 档案已绑定")
+      toast.success(t("premium.bindSuccess"))
     } finally {
       setSaving(false)
     }
@@ -38,24 +46,79 @@ export default function PremiumPage() {
     setSaving(true)
     try {
       const response = await api.unbindPremium()
-      if (response.code !== 0) return toast.error(response.message)
+      if (response.code !== 0) return toast.error(response.message || t("premium.errors.unbindFailed"))
       setBinding(null)
-      toast.success("绑定已解除")
+      toast.success(t("premium.unbindSuccess"))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  if (loading) {
+    return <LoadingState title={t("premium.title")} />
+  }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-amber-400/30 bg-amber-400/10"><Crown className="h-6 w-6 text-amber-500" /></div><div><h1 className="text-2xl font-bold">正版档案绑定</h1><p className="text-sm text-muted-foreground">通过 Minecraft Services 直接校验访问令牌。</p></div></div>
+    <PageStack>
+      <PageHeader title={t("premium.title")} description={t("premium.description")} />
       {binding ? (
-        <div className="mc-card space-y-4 p-6"><div><p className="text-sm text-muted-foreground">已绑定角色</p><p className="text-xl font-semibold">{binding.username}</p><p className="font-mono text-xs text-muted-foreground">{binding.uuid}</p></div><Button variant="outline" onClick={() => void unbind()} disabled={saving}><Unlink className="mr-2 h-4 w-4" />解除绑定</Button></div>
+        <PagePanel className="mx-auto w-full max-w-xl space-y-5">
+          <div>
+            <p className="studio-label">{t("premium.boundPlayer")}</p>
+            <p className="mt-2 text-xl font-semibold">{binding.username}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <code className="rounded-lg border border-border bg-muted px-2 py-1 font-mono text-xs">
+                {binding.uuid}
+              </code>
+              <CopyButton value={binding.uuid} label={t("common.copyUuid")} />
+            </div>
+            {binding.bound_at ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {t("premium.boundAt")}: {binding.bound_at}
+              </p>
+            ) : null}
+          </div>
+          <Button variant="outline" onClick={() => void unbind()} disabled={saving}>
+            <Unlink className="size-4" />
+            {t("premium.unbind")}
+          </Button>
+        </PagePanel>
       ) : (
-        <form onSubmit={bind} className="mc-card space-y-5 p-6"><div className="space-y-2"><Label htmlFor="minecraftToken">Minecraft Services Access Token</Label><Input id="minecraftToken" type="password" value={token} onChange={(event) => setToken(event.target.value)} minLength={20} required /><p className="text-xs text-muted-foreground">令牌仅用于验证档案并保存在 D1；建议绑定完成后在 Microsoft 账户中撤销旧令牌。</p></div><Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}验证并绑定</Button></form>
+        <div className="mx-auto grid w-full max-w-3xl gap-4 lg:grid-cols-[1fr_0.9fr]">
+          <PagePanel className="space-y-5">
+            <div>
+              <h2 className="panel-title">{t("premium.notBound")}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{t("premium.notBoundDesc")}</p>
+            </div>
+            <form onSubmit={(event) => void bind(event)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="minecraftToken">{t("premium.tokenLabel")}</Label>
+                <Input
+                  id="minecraftToken"
+                  type="password"
+                  value={token}
+                  onChange={(event) => setToken(event.target.value)}
+                  minLength={20}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">{t("premium.tokenHint")}</p>
+              </div>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {t("premium.bindAction")}
+              </Button>
+            </form>
+          </PagePanel>
+          <PagePanel>
+            <h2 className="panel-title">{t("premium.benefits")}</h2>
+            <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+              <li>{t("premium.benefit1")}</li>
+              <li>{t("premium.benefit2")}</li>
+              <li>{t("premium.benefit3")}</li>
+            </ul>
+          </PagePanel>
+        </div>
       )}
-    </div>
+    </PageStack>
   )
 }

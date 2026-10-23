@@ -1,12 +1,16 @@
 "use client"
 
-import React from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { Brand } from "@/components/brand"
+import { SkinStage } from "@/components/skin-stage"
+import { LanguageSwitch } from "@/components/language-switch"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useI18n } from "@/lib/i18n/context"
 
 interface AuthCardProps {
-  children: React.ReactNode
+  children: ReactNode
   title: string
   description: string
 }
@@ -14,53 +18,44 @@ interface AuthCardProps {
 export function AuthCard({ children, title, description }: AuthCardProps) {
   const { t } = useI18n()
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* 顶部导航栏 */}
-      <div className="flex items-center justify-between p-6 lg:px-12">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{t("common.backHome")}</span>
+    <div className="auth-shell">
+      <header className="auth-header">
+        <Link href="/">
+          <Brand />
         </Link>
-        
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">CS</span>
-          </div>
-          <span className="font-bold text-foreground">CraftSkin</span>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <LanguageSwitch />
+          <ThemeToggle />
+          <Link href="/" className="nav-link flex items-center gap-2">
+            <ArrowLeft size={15} />
+            <span className="hidden sm:inline">{t("common.backHome")}</span>
+          </Link>
         </div>
-        
-        <div className="w-20" />
-      </div>
-
-      {/* 表单内容区域 */}
-      <div className="flex-1 flex items-center justify-center px-6 lg:px-12 py-8">
-        <div className="w-full max-w-md">
-          {/* 标题 */}
-          <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-2">{title}</h1>
-            <p className="text-muted-foreground">{description}</p>
+      </header>
+      <main id="main-content" className="auth-main">
+        <aside className="auth-aside">
+          <span className="studio-label">{t("studio.authEyebrow")}</span>
+          <h2>{t("studio.authTitle")}</h2>
+          <p>{t("studio.authDescription")}</p>
+          <SkinStage compact />
+        </aside>
+        <div className="auth-form-panel">
+          <div className="auth-form-heading">
+            <span className="pixel-dot" />
+            <h1>{title}</h1>
+            <p>{description}</p>
           </div>
-          
-          {/* 表单卡片 */}
-          <div className="bg-card border border-border rounded-xl p-6 lg:p-8 shadow-sm">
-            {children}
-          </div>
+          {children}
+          <p className="auth-form-note">{t("studio.authNote")}</p>
         </div>
-      </div>
-
-      {/* 底部信息 */}
-      <div className="p-6 lg:px-12 text-sm text-muted-foreground border-t border-border">
-        <div className="flex items-center justify-center gap-6">
-          <span>{t("authCard.secureNotice")}</span>
-          <span className="text-border">|</span>
-          <Link href="/terms" className="hover:text-foreground transition-colors">{t("auth.terms")}</Link>
-          <Link href="/privacy" className="hover:text-foreground transition-colors">{t("auth.privacy")}</Link>
+      </main>
+      <footer className="auth-footer">
+        <span>© 2026 YoloSkin</span>
+        <div className="flex gap-5">
+          <Link href="/terms">{t("auth.terms")}</Link>
+          <Link href="/privacy">{t("auth.privacy")}</Link>
         </div>
-      </div>
+      </footer>
     </div>
   )
 }

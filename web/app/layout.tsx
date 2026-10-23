@@ -1,46 +1,43 @@
-import React from "react"
+import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import { Toaster } from "sonner"
 import { I18nProvider } from "@/lib/i18n/context"
 import { SiteSettingsProvider } from "@/lib/site-settings/context"
 import { AuthProvider } from "@/lib/auth/context"
+import { ThemeProvider } from "@/components/theme-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import "@fontsource-variable/manrope"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "YoloSkin - Cloudflare Minecraft Skin Service",
-  description: "Discover, download, and share amazing Minecraft skins",
+  title: "YoloSkin",
+  description: "Minecraft skins, capes, and players on Cloudflare",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
+    icon: "/icon.svg",
+    apple: "/apple-icon.png"
+  }
 }
 
 export default function RootLayout({
-  children,
+  children
 }: Readonly<{
-  children: React.ReactNode
+  children: ReactNode
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <I18nProvider>
-          <AuthProvider>
-            <SiteSettingsProvider>{children}</SiteSettingsProvider>
-          </AuthProvider>
-        </I18nProvider>
+        <a href="#main-content" className="skip-link">
+          跳转到主要内容 / Skip to content
+        </a>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <I18nProvider>
+            <AuthProvider>
+              <SiteSettingsProvider>
+                <TooltipProvider>{children}</TooltipProvider>
+              </SiteSettingsProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </ThemeProvider>
         <Toaster position="top-right" richColors />
       </body>
     </html>

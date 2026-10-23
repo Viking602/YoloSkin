@@ -1,4 +1,4 @@
-# YoloSkin Cloudflare
+# YoloSkin
 
 YoloSkin 是一个完全由 Cloudflare 托管的 Minecraft 皮肤服务：
 
@@ -14,16 +14,22 @@ YoloSkin 是一个完全由 Cloudflare 托管的 Minecraft 皮肤服务：
 
 ## 本地开发
 
-要求 Node.js 22+。
+要求 Bun 1.4+ 和 Node.js 22.12+（Next.js、Wrangler 的工具运行时）。依赖安装和项目命令统一使用 Bun。
+
+当前框架版本：Next.js 16.4.2、React 19.3.1、Hono 4.13.13、TypeScript 7.0.2、Tailwind CSS 4.3.3。前后端使用 ESNext、显式类型导入和严格索引检查；Next 配置使用 `next.config.ts` 与 `satisfies NextConfig`。
+
+升级参考：[Next.js 官方指南](https://nextjs.org/docs/app/getting-started/upgrading)、[Cloudflare Vitest 插件迁移](https://developers.cloudflare.com/workers/testing/vitest-integration/migration-guides/migrate-to-vitest-plugin/)。测试工具使用 `@cloudflare/vitest-plugin` 1.4.7 与 Vitest 5.0.5。
 
 ```bash
-npm install
-npm --prefix web install
+bun install
+bun install --cwd web
 cp .dev.vars.example .dev.vars
-npm run build
-npm run d1:migrate:local
-npm run dev
+bun run build
+bun run d1:migrate:local
+bun run dev
 ```
+
+根目录和 `web/` 分别维护 `bun.lock`；CI 可使用 `bun install --frozen-lockfile` 和 `bun install --cwd web --frozen-lockfile`。测试请使用 `bun run test`，由 Vitest 启动 Cloudflare Workers 模拟环境。
 
 Wrangler 默认在 `.wrangler/state` 中模拟 D1、R2、Queues 和 Email Service。本地邮件不会真实发送，正文会记录到 Wrangler 输出指示的临时文件。本地站点为 `http://localhost:8787`。
 
@@ -32,17 +38,17 @@ Wrangler 默认在 `.wrangler/state` 中模拟 D1、R2、Queues 和 Email Servic
 登录并创建 D1、R2 和邮件队列：
 
 ```bash
-npx wrangler login
-npx wrangler d1 create yoloskin-db
-npx wrangler r2 bucket create yoloskin-textures
-npx wrangler queues create yoloskin-password-reset
-npx wrangler queues create yoloskin-email-dlq
+bunx wrangler login
+bunx wrangler d1 create yoloskin-db
+bunx wrangler r2 bucket create yoloskin-textures
+bunx wrangler queues create yoloskin-password-reset
+bunx wrangler queues create yoloskin-email-dlq
 ```
 
 把 `wrangler d1 create` 返回的 UUID 写入 `wrangler.jsonc` 的 `database_id`，替换全零占位值。然后执行：
 
 ```bash
-npm run d1:migrate:remote
+bun run d1:migrate:remote
 ```
 
 ### 密码找回资源
@@ -57,14 +63,14 @@ Cloudflare 向任意收件人发送事务邮件需要 Workers Paid；Email Sendi
 可选的 OAuth 与 Yggdrasil 签名密钥只能通过 Workers Secrets 配置，不能写入仓库或 D1：
 
 ```bash
-npx wrangler secret put GOOGLE_CLIENT_SECRET
-npx wrangler secret put MICROSOFT_CLIENT_SECRET
-npx wrangler secret put OAUTH_STATE_SECRET
-npx wrangler secret put TURNSTILE_SECRET_KEY
-npx wrangler secret put RESET_TOKEN_ENCRYPTION_KEY
-npx wrangler secret put PASSWORD_RESET_RATE_KEY
-npx wrangler secret put YGGDRASIL_PRIVATE_KEY
-npx wrangler secret put YGGDRASIL_PUBLIC_KEY
+bunx wrangler secret put GOOGLE_CLIENT_SECRET
+bunx wrangler secret put MICROSOFT_CLIENT_SECRET
+bunx wrangler secret put OAUTH_STATE_SECRET
+bunx wrangler secret put TURNSTILE_SECRET_KEY
+bunx wrangler secret put RESET_TOKEN_ENCRYPTION_KEY
+bunx wrangler secret put PASSWORD_RESET_RATE_KEY
+bunx wrangler secret put YGGDRASIL_PRIVATE_KEY
+bunx wrangler secret put YGGDRASIL_PUBLIC_KEY
 ```
 
 Yggdrasil RSA 密钥可这样生成：
@@ -94,17 +100,17 @@ openssl rsa -pubout -in yggdrasil-private.pem -out yggdrasil-public.pem
 注册第一个账号后，用 D1 CLI 提升权限：
 
 ```bash
-npx wrangler d1 execute yoloskin-db --remote --command "UPDATE users SET permission = 2 WHERE email = 'admin@example.com'"
+bunx wrangler d1 execute yoloskin-db --remote --command "UPDATE users SET permission = 2 WHERE email = 'admin@example.com'"
 ```
 
 ## 验证与部署
 
 ```bash
-npm run check
-npm run deploy
+bun run check
+bun run deploy
 ```
 
-`npm run check` 会依次执行 Worker 类型检查、绑定类型漂移检查、测试、Next 静态导出和 Wrangler dry-run。
+`bun run check` 会依次执行 Next 静态导出、前后端类型检查、绑定类型漂移检查、Vitest 测试和 Wrangler dry-run。
 
 部署后把 `wrangler.jsonc` 的 `PUBLIC_BASE_URL` 改为正式自定义域名。Yggdrasil 基础地址为：
 
@@ -115,7 +121,7 @@ https://your-domain.example/api/yggdrasil
 ## 数据与安全约束
 
 - 登录态使用 `HttpOnly`、`SameSite=Lax` Cookie；D1 只保存令牌 SHA-256 摘要。
-- 密码使用 Web Crypto PBKDF2-SHA256（210,000 次迭代）。
+- 密码使用 Web Crypto PBKDF2-SHA256（100,000 次迭代）。
 - 纹理上传上限 2 MiB，并校验 PNG 签名与 Minecraft 尺寸。
 - R2 响应直接流式返回，不把对象整体读入 Worker 内存。
 - OAuth 与 RSA 密钥通过 Wrangler secrets 注入。

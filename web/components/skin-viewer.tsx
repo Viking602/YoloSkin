@@ -98,6 +98,19 @@ export function SkinViewer({
     }
   }, [initViewer])
 
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const observer = new ResizeObserver((entries) => {
+      const size = entries[0]?.contentRect
+      if (size && size.width > 0 && size.height > 0) {
+        viewerRef.current?.resize(size.width, size.height)
+      }
+    })
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
   // 更新皮肤
   useEffect(() => {
     const loadSkin = async () => {

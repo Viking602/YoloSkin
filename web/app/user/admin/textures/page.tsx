@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { RefreshCw, Eye, EyeOff, Copy, CheckCircle } from "lucide-react"
+import { RefreshCw, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DataTable, type Column } from "@/components/data-table"
 import { api, type Texture } from "@/lib/api"
+import { CopyButton } from "@/components/copy-button"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "sonner"
 
@@ -14,8 +16,6 @@ export default function AdminTexturesPage() {
   const { t, locale } = useI18n()
   const [textures, setTextures] = useState<TextureRow[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [copiedHash, setCopiedHash] = useState<string | null>(null)
-
   useEffect(() => {
     handleRefresh()
   }, [])
@@ -30,12 +30,6 @@ export default function AdminTexturesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleCopyHash = async (hash: string) => {
-    await navigator.clipboard.writeText(hash)
-    setCopiedHash(hash)
-    setTimeout(() => setCopiedHash(null), 2000)
   }
 
   const formatDate = (dateString: string) => {
@@ -72,14 +66,8 @@ export default function AdminTexturesPage() {
       key: "type",
       header: t("texturesAdmin.type"),
       render: (value) => (
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${
-            value === "skin"
-              ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30"
-              : "bg-purple-600/20 text-purple-400 border border-purple-500/30"
-          }`}
-        >
-            {value === "skin" ? t("closet.skin") : t("closet.cape")}
+        <span className={value === "skin" ? "badge-skin" : "badge-cape"}>
+          {value === "skin" ? t("closet.skin") : t("closet.cape")}
         </span>
       ),
     },
@@ -88,21 +76,10 @@ export default function AdminTexturesPage() {
       header: "Hash",
       render: (_, row) => (
         <div className="flex items-center gap-2">
-          <code className="text-xs bg-secondary px-2 py-1 rounded">
-            {row.hash.slice(0, 8)}...{row.hash.slice(-8)}
+          <code className="rounded bg-secondary px-2 py-1 text-xs">
+            {row.hash.slice(0, 8)}-{row.hash.slice(-8)}
           </code>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => handleCopyHash(row.hash)}
-          >
-            {copiedHash === row.hash ? (
-              <CheckCircle className="w-3 h-3 text-primary" />
-            ) : (
-              <Copy className="w-3 h-3" />
-            )}
-          </Button>
+          <CopyButton value={row.hash} label={t("common.copyHash")} />
         </div>
       ),
     },
@@ -145,64 +122,47 @@ export default function AdminTexturesPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("texturesAdmin.title")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t("texturesAdmin.description")}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="gap-2 bg-transparent"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          {t("common.refresh")}
-        </Button>
-      </div>
-
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-foreground">{textures.length}</div>
-          <div className="text-sm text-muted-foreground">{t("adminTextures.total")}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-primary">
-            {textures.filter((t) => t.type === "skin").length}
-          </div>
-          <div className="text-sm text-muted-foreground">{t("closet.skin")}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-accent">
-            {textures.filter((t) => t.type === "cape").length}
-          </div>
-          <div className="text-sm text-muted-foreground">{t("closet.cape")}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-foreground">
-            {formatSize(textures.reduce((sum, t) => sum + t.size, 0))}
-          </div>
-          <div className="text-sm text-muted-foreground">{t("adminTextures.totalSize")}</div>
-        </div>
-      </div>
-
-      {/* 数据表格 */}
-      <DataTable
-        columns={columns}
-        data={textures}
-        isLoading={isLoading}
-        onRetry={handleRefresh}
-        emptyMessage={t("adminTextures.empty")}
-        searchable
-        searchPlaceholder={t("texturesAdmin.searchPlaceholder")}
-        searchKeys={["name", "hash"]}
+    <PageStack>
+      <PageHeader
+        title={t("texturesAdmin.title")}
+        description={t("texturesAdmin.description")}
+        actions={
+          <Button variant="outline" onClick={() => void handleRefresh()} disabled={isLoading}>
+            <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+            {t("common.refresh")}
+          </Button>
+        }
       />
-    </div>
+      <div className="stat-grid">
+        <div className="stat-card">
+          <strong className="tabular-nums">{textures.length}</strong>
+          <span>{t("adminTextures.total")}</span>
+        </div>
+        <div className="stat-card">
+          <strong className="tabular-nums">{textures.filter((item) => item.type === "skin").length}</strong>
+          <span>{t("units.skins")}</span>
+        </div>
+        <div className="stat-card">
+          <strong className="tabular-nums">{textures.filter((item) => item.type === "cape").length}</strong>
+          <span>{t("units.capes")}</span>
+        </div>
+        <div className="stat-card">
+          <strong>{formatSize(textures.reduce((sum, item) => sum + item.size, 0))}</strong>
+          <span>{t("adminTextures.totalSize")}</span>
+        </div>
+      </div>
+      <PagePanel>
+        <DataTable
+          columns={columns}
+          data={textures}
+          isLoading={isLoading}
+          onRetry={handleRefresh}
+          emptyMessage={t("adminTextures.empty")}
+          searchable
+          searchPlaceholder={t("texturesAdmin.searchPlaceholder")}
+          searchKeys={["name", "hash"]}
+        />
+      </PagePanel>
+    </PageStack>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react"
+import { createContext, useContext, useState, useCallback, useEffect } from "react"
+import type { ReactNode } from "react"
 import { api } from "@/lib/api"
 
 export interface SiteSettings {
@@ -16,13 +17,13 @@ export interface SiteSettings {
 }
 
 const defaultSettings: SiteSettings = {
-  siteName: "CraftSkin",
+  siteName: "YoloSkin",
   siteDescription: "发现、下载和分享精美的 Minecraft 皮肤",
   siteUrl: "http://localhost:3000",
   siteLogo: null,
   favicon: null,
-  primaryColor: "#2E7D32",
-  footerText: "© 2024 CraftSkin. All rights reserved.",
+  primaryColor: "#244D37",
+  footerText: "© 2026 YoloSkin. All rights reserved.",
   allowRegistration: true,
   requireEmailVerification: false,
 }
@@ -35,7 +36,7 @@ interface SiteSettingsContextType {
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | undefined>(undefined)
 
-const SETTINGS_STORAGE_KEY = "craftskin-site-settings"
+const SETTINGS_STORAGE_KEY = "yoloskin-site-settings"
 
 function toContextSettings(data: {
   site_name: string
@@ -61,7 +62,7 @@ function toContextSettings(data: {
   }
 }
 
-export function SiteSettingsProvider({ children }: { children: React.ReactNode }) {
+export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -105,7 +106,8 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   }, [])
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--primary", settings.primaryColor)
+    const color = settings.primaryColor.toLowerCase() === "#2e7d32" ? "#244d37" : settings.primaryColor
+    document.documentElement.style.setProperty("--primary", color)
   }, [settings.primaryColor])
 
   useEffect(() => {

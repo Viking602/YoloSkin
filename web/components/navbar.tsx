@@ -2,212 +2,103 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Search, Menu, X, Upload, User, Shield } from "lucide-react"
+import { ArrowUpRight, Menu, X } from "lucide-react"
+import { Brand } from "@/components/brand"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { LanguageSwitch } from "@/components/language-switch"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/lib/auth/context"
 import { useI18n } from "@/lib/i18n/context"
 import { useSiteSettings } from "@/lib/site-settings/context"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
   const { isLoggedIn, isAdmin } = useAuth()
   const { t } = useI18n()
   const { settings } = useSiteSettings()
+  const links = [
+    { href: "/#workspace", label: t("studio.yourWorkspace") },
+    { href: "/#how-it-works", label: t("studio.howItWorks") },
+    { href: "/user/closet", label: t("nav.closet") },
+    ...(isAdmin
+      ? [{ href: "/user/admin/users", label: t("nav.adminPanel") }]
+      : [])
+  ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-4 lg:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">
-              {settings.siteName.substring(0, 2).toUpperCase()}
-            </span>
-          </div>
-          <span className="text-xl font-bold text-foreground">{settings.siteName}</span>
+    <header className="site-header">
+      <div className="site-container flex h-20 items-center justify-between gap-8">
+        <Link href="/" aria-label={settings.siteName || "YoloSkin"}>
+          <Brand name={settings.siteName} />
         </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center ml-8 lg:ml-10 gap-7 xl:gap-9">
-          <Link href="/" className="text-sm font-medium text-foreground transition-colors hover:text-primary">
-            {t("nav.home")}
-          </Link>
-          <Link href="#skins" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            {t("navbar.skins")}
-          </Link>
-          <Link href="#featured" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            {t("navbar.featured")}
-          </Link>
-          {isLoggedIn && (
-            <Link href="/user/players" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              {t("nav.userCenter")}
-            </Link>
-          )}
-          {isAdmin && (
-            <Link href="/user/admin/users" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              {t("nav.adminPanel")}
-            </Link>
-          )}
-        </nav>
-
-        {/* Search Bar */}
-        <div className="hidden lg:block flex-1 max-w-lg mx-10 xl:mx-12">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder={t("navbar.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 bg-secondary border-2 border-border rounded-xl"
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="hidden md:flex items-center gap-3">
-          <LanguageSwitch />
-          {isLoggedIn ? (
-            <>
-              <Button variant="ghost" size="sm" className="gap-2" asChild>
-                <Link href="/user/upload">
-                  <Upload className="h-4 w-4" />
-                  {t("navbar.upload")}
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2 bg-transparent" asChild>
-                <Link href="/user/players">
-                  <User className="h-4 w-4" />
-                  {t("nav.userCenter")}
-                </Link>
-              </Button>
-              {isAdmin && (
-                <Button variant="destructive" size="sm" className="gap-2" asChild>
-                  <Link href="/user/admin/users">
-                    <Shield className="h-4 w-4" />
-                    {t("navbar.manage")}
-                  </Link>
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/auth/register">{t("auth.register")}</Link>
-              </Button>
-              <Button size="sm" className="gap-2" asChild>
-                <Link href="/auth/login">
-                  <User className="h-4 w-4" />
-                  {t("auth.login")}
-                </Link>
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Mobile Menu Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        <nav
+          className="hidden items-center gap-8 md:flex"
+          aria-label={t("studio.mainNavigation")}
         >
-          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
-
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="border-t border-border bg-background md:hidden">
-          <div className="space-y-4 p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder={t("navbar.searchPlaceholder")}
-                className="w-full pl-10 bg-secondary"
-              />
-            </div>
-            <nav className="flex flex-col gap-2">
-              <Link 
-                href="/" 
-                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {t("nav.home")}
+          {links.map((link) => (
+            <Link key={link.href} href={link.href} className="nav-link">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <LanguageSwitch />
+          <ThemeToggle />
+          <div className="hidden items-center gap-2 md:flex">
+            {!isLoggedIn && (
+              <Button variant="ghost" asChild>
+                <Link href="/auth/login">{t("auth.login")}</Link>
+              </Button>
+            )}
+            <Button asChild>
+              <Link href={isLoggedIn ? "/user/players" : "/auth/register"}>
+                {t(isLoggedIn ? "nav.userCenter" : "home.getStarted")}
+                <ArrowUpRight size={16} />
               </Link>
-              <Link 
-                href="#skins" 
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {t("navbar.skins")}
-              </Link>
-              <Link 
-                href="#featured" 
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {t("navbar.featured")}
-              </Link>
-              {isLoggedIn && (
-                <>
-                  <Link 
-                    href="/user/players" 
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {t("nav.userCenter")}
-                  </Link>
-                  <Link 
-                    href="/user/upload" 
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {t("navbar.uploadTexture")}
-                  </Link>
-                </>
-              )}
-              {isAdmin && (
-                  <Link 
-                    href="/user/admin/users" 
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                  {t("nav.adminPanel")}
-                </Link>
-              )}
-            </nav>
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <LanguageSwitch />
-              <div className="flex gap-2">
-                {isLoggedIn ? (
-                  <Button size="sm" variant="outline" className="gap-2 bg-transparent" asChild>
-                    <Link href="/user/players">
-                      <User className="h-4 w-4" />
-                      {t("nav.userCenter")}
-                    </Link>
-                  </Button>
-                ) : (
-                  <>
-                    <Button size="sm" variant="ghost" asChild>
-                      <Link href="/auth/register">{t("auth.register")}</Link>
-                    </Button>
-                    <Button size="sm" className="gap-2" asChild>
-                      <Link href="/auth/login">
-                        <User className="h-4 w-4" />
-                        {t("auth.login")}
-                      </Link>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
+            </Button>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={t("studio.toggleMenu")}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setIsMenuOpen((value) => !value)}
+          >
+            {isMenuOpen ? <X /> : <Menu />}
+          </Button>
         </div>
+      </div>
+      {isMenuOpen && (
+        <nav
+          id="mobile-navigation"
+          className="site-container grid gap-1 border-t border-border py-4 md:hidden"
+          aria-label={t("studio.mainNavigation")}
+        >
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-lg px-3 py-3 text-sm hover:bg-secondary"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="mt-3 flex gap-2 border-t border-border pt-4">
+            <Button variant="outline" asChild>
+              <Link href={isLoggedIn ? "/user/players" : "/auth/login"}>
+                {t(isLoggedIn ? "nav.userCenter" : "auth.login")}
+              </Link>
+            </Button>
+            {!isLoggedIn && (
+              <Button asChild>
+                <Link href="/auth/register">{t("home.createAccount")}</Link>
+              </Button>
+            )}
+          </div>
+        </nav>
       )}
     </header>
   )
