@@ -214,7 +214,7 @@ export default {
     namePlaceholder: "Enter player name",
     nameHint: "Only letters, numbers, and underscores allowed, 3-16 characters",
     quickCreate: "Quick Create",
-    searchPlaceholder: "Search players...",
+    searchPlaceholder: "Search players",
     empty: "No players yet",
     createFirst: "Create your first player",
     uuid: "UUID",
@@ -389,7 +389,7 @@ export default {
   users: {
     title: "User Management",
     description: "Manage all registered users",
-    searchPlaceholder: "Search users...",
+    searchPlaceholder: "Search users",
     email: "Email",
     nickname: "Nickname",
     score: "Score",
@@ -406,7 +406,7 @@ export default {
   texturesAdmin: {
     title: "Texture Management",
     description: "Manage all uploaded textures",
-    searchPlaceholder: "Search textures...",
+    searchPlaceholder: "Search textures",
     allTypes: "All Types",
     name: "Name",
     type: "Type",
@@ -421,7 +421,7 @@ export default {
   auditLogs: {
     title: "Audit Logs",
     description: "View system operation records",
-    searchPlaceholder: "Search logs...",
+    searchPlaceholder: "Search logs",
     user: "User",
     action: "Action",
     ip: "IP Address",
@@ -708,7 +708,7 @@ export default {
   navbar: {
     skins: "Skins",
     featured: "Featured",
-    searchPlaceholder: "Search skins...",
+    searchPlaceholder: "Search skins",
     upload: "Upload",
     uploadTexture: "Upload Texture",
     manage: "Manage",

@@ -55,7 +55,7 @@ export function DataTable<T extends Record<string, unknown>>({
 }: DataTableProps<T>) {
   const { t } = useI18n()
   const resolvedEmptyMessage = emptyMessage ?? t("common.noData")
-  const resolvedSearchPlaceholder = searchPlaceholder ?? `${t("common.search")}...`
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t("common.search")
   const [searchQuery, setSearchQuery] = useState("")
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")

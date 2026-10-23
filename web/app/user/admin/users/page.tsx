@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DataTable, type Column } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { api, type User } from "@/lib/api"
-import { Count, PageHeader, PagePanel, PageStack } from "@/components/page-header"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "sonner"
 
@@ -136,27 +136,19 @@ export default function AdminUsersPage() {
       />
       <div className="stat-grid">
         <div className="stat-card">
-          <strong>
-            <Count value={stats.total_users} unit={t("units.users")} />
-          </strong>
+          <strong className="tabular-nums">{stats.total_users}</strong>
           <span>{t("adminUsers.totalUsers")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={stats.verified_users} unit={t("units.users")} />
-          </strong>
+          <strong className="tabular-nums">{stats.verified_users}</strong>
           <span>{t("users.verified")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={stats.vip_users} unit={t("units.users")} />
-          </strong>
+          <strong className="tabular-nums">{stats.vip_users}</strong>
           <span>{t("adminUsers.vipUsers")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={stats.admin_users} unit={t("units.users")} />
-          </strong>
+          <strong className="tabular-nums">{stats.admin_users}</strong>
           <span>{t("adminUsers.adminUsers")}</span>
         </div>
       </div>

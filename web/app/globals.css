@@ -380,7 +380,7 @@
   background-size: 20px 20px;
 }
 .skin-stage-tall .skin-stage-canvas {
-  height: min(460px, 58vh);
+  height: min(340px, 42vh);
 }
 .stage-watermark {
   position: absolute;

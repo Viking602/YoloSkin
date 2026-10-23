@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DataTable, type Column } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { api, type AuditLog } from "@/lib/api"
-import { Count, PageHeader, PagePanel, PageStack } from "@/components/page-header"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "sonner"
 
@@ -161,27 +161,19 @@ export default function AdminAuditLogsPage() {
       />
       <div className="stat-grid">
         <div className="stat-card">
-          <strong>
-            <Count value={logs.length} unit={t("units.logs")} />
-          </strong>
+          <strong className="tabular-nums">{logs.length}</strong>
           <span>{t("adminAudit.total")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={logs.filter((item) => item.action.startsWith("user.")).length} unit={t("units.logs")} />
-          </strong>
+          <strong className="tabular-nums">{logs.filter((item) => item.action.startsWith("user.")).length}</strong>
           <span>{t("adminAudit.userOps")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={logs.filter((item) => item.action.startsWith("texture.")).length} unit={t("units.logs")} />
-          </strong>
+          <strong className="tabular-nums">{logs.filter((item) => item.action.startsWith("texture.")).length}</strong>
           <span>{t("adminAudit.textureOps")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={logs.filter((item) => item.action.startsWith("admin.")).length} unit={t("units.logs")} />
-          </strong>
+          <strong className="tabular-nums">{logs.filter((item) => item.action.startsWith("admin.")).length}</strong>
           <span>{t("adminAudit.adminOps")}</span>
         </div>
       </div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DataTable, type Column } from "@/components/data-table"
 import { api, type Texture } from "@/lib/api"
 import { CopyButton } from "@/components/copy-button"
-import { Count, PageHeader, PagePanel, PageStack } from "@/components/page-header"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "sonner"
 
@@ -135,22 +135,16 @@ export default function AdminTexturesPage() {
       />
       <div className="stat-grid">
         <div className="stat-card">
-          <strong>
-            <Count value={textures.length} unit={t("units.textures")} />
-          </strong>
+          <strong className="tabular-nums">{textures.length}</strong>
           <span>{t("adminTextures.total")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={textures.filter((item) => item.type === "skin").length} unit={t("units.skins")} />
-          </strong>
-          <span>{t("closet.skin")}</span>
+          <strong className="tabular-nums">{textures.filter((item) => item.type === "skin").length}</strong>
+          <span>{t("units.skins")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count value={textures.filter((item) => item.type === "cape").length} unit={t("units.capes")} />
-          </strong>
-          <span>{t("closet.cape")}</span>
+          <strong className="tabular-nums">{textures.filter((item) => item.type === "cape").length}</strong>
+          <span>{t("units.capes")}</span>
         </div>
         <div className="stat-card">
           <strong>{formatSize(textures.reduce((sum, item) => sum + item.size, 0))}</strong>

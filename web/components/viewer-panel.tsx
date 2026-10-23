@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Move, Pause, Play, RotateCcw } from "lucide-react"
+import { ChevronLeft, ChevronRight, Move, Pause, Play } from "lucide-react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n/context"
@@ -127,14 +127,24 @@ export function ViewerPanel({
             {isAnimating ? <Pause size={15} /> : <Play size={15} />}
             {t(isAnimating ? "viewer.pauseAnimation" : "viewer.playAnimation")}
           </button>
-          <button type="button" className="stage-control" onClick={handleReset}>
-            <RotateCcw size={15} />
-            {t("viewer.resetView")}
-          </button>
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-3">
-        <div className="flex items-center gap-2" role="group" aria-label={t("viewer.background")}>
+      <div className="stage-actions">
+        <Button onClick={onUse} disabled={isLoading}>
+          {t("viewer.useTexture")}
+        </Button>
+        <Button variant="outline" onClick={onReset} disabled={isLoading}>
+          {t("viewer.resetSelected")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onPrev} disabled={!hasPrev}>
+          <ChevronLeft className="size-4" />
+          {t("viewer.previousSkin")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onNext} disabled={!hasNext}>
+          {t("viewer.nextSkin")}
+          <ChevronRight className="size-4" />
+        </Button>
+        <div className="ml-auto flex items-center gap-2" role="group" aria-label={t("viewer.background")}>
           {BG_COLORS.map((bg) => (
             <button
               key={bg.labelKey}
@@ -148,24 +158,6 @@ export function ViewerPanel({
             />
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onPrev} disabled={!hasPrev}>
-            <ChevronLeft className="size-4" />
-            {t("viewer.previousSkin")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={onNext} disabled={!hasNext}>
-            {t("viewer.nextSkin")}
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="stage-actions">
-        <Button onClick={onUse} disabled={isLoading}>
-          {t("viewer.useTexture")}
-        </Button>
-        <Button variant="outline" onClick={onReset} disabled={isLoading}>
-          {t("viewer.resetSelected")}
-        </Button>
       </div>
       <div className="stage-caption">
         <span className="stage-caption-line" />

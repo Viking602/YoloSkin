@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { DataTable, type Column } from "@/components/data-table"
 import { CopyButton } from "@/components/copy-button"
-import { Count, PageHeader, PagePanel, PageStack } from "@/components/page-header"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { api, type Player } from "@/lib/api"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "sonner"
@@ -87,9 +87,9 @@ export default function PlayersPage() {
       key: "uuid",
       header: t.players.uuid,
       render: (_, row) => (
-        <div className="flex items-center gap-2">
-          <code className="rounded-lg border border-border bg-muted px-2 py-1 font-mono text-xs">
-            {row.uuid.slice(0, 8)}-{row.uuid.slice(-8)}
+        <div className="flex min-w-0 items-center gap-2">
+          <code className="max-w-[14rem] truncate rounded-lg border border-border bg-muted px-2 py-1 font-mono text-xs">
+            {row.uuid}
           </code>
           <CopyButton value={row.uuid} label={translate("common.copyUuid")} />
         </div>
@@ -169,26 +169,18 @@ export default function PlayersPage() {
 
       <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
         <div className="stat-card">
-          <strong>
-            <Count value={players.length} unit={translate("units.players")} />
-          </strong>
-          <span>{t.players.title}</span>
+          <strong className="tabular-nums">{players.length}</strong>
+          <span>{translate("units.players")}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count
-              value={players.filter((player) => player.tid_skin).length}
-              unit={translate("units.skins")}
-            />
+          <strong className="tabular-nums">
+            {players.filter((player) => player.tid_skin).length}
           </strong>
           <span>{t.players.skinTid}</span>
         </div>
         <div className="stat-card">
-          <strong>
-            <Count
-              value={players.filter((player) => player.tid_cape).length}
-              unit={translate("units.capes")}
-            />
+          <strong className="tabular-nums">
+            {players.filter((player) => player.tid_cape).length}
           </strong>
           <span>{t.players.capeTid}</span>
         </div>

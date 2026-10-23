@@ -214,7 +214,7 @@ export default {
     namePlaceholder: "输入角色名称",
     nameHint: "只能包含字母、数字和下划线，长度 3-16 个字符",
     quickCreate: "快速创建",
-    searchPlaceholder: "搜索角色名...",
+    searchPlaceholder: "搜索角色名",
     empty: "还没有创建任何角色",
     createFirst: "创建第一个角色",
     uuid: "UUID",
@@ -389,7 +389,7 @@ export default {
   users: {
     title: "用户管理",
     description: "管理所有注册用户",
-    searchPlaceholder: "搜索用户...",
+    searchPlaceholder: "搜索用户",
     email: "邮箱",
     nickname: "昵称",
     score: "积分",
@@ -406,7 +406,7 @@ export default {
   texturesAdmin: {
     title: "纹理管理",
     description: "管理所有上传的纹理",
-    searchPlaceholder: "搜索纹理...",
+    searchPlaceholder: "搜索纹理",
     allTypes: "全部类型",
     name: "名称",
     type: "类型",
@@ -421,7 +421,7 @@ export default {
   auditLogs: {
     title: "审计日志",
     description: "查看系统操作记录",
-    searchPlaceholder: "搜索日志...",
+    searchPlaceholder: "搜索日志",
     user: "用户",
     action: "操作",
     ip: "IP 地址",
@@ -708,7 +708,7 @@ export default {
   navbar: {
     skins: "皮肤库",
     featured: "精选",
-    searchPlaceholder: "搜索皮肤...",
+    searchPlaceholder: "搜索皮肤",
     upload: "上传",
     uploadTexture: "上传纹理",
     manage: "管理",
