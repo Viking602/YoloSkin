@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DataTable, type Column } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { api, type AuditLog } from "@/lib/api"
+import { Count, PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "sonner"
 
@@ -147,64 +148,55 @@ export default function AdminAuditLogsPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("auditLogs.title")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t("adminAudit.description")}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="gap-2 bg-transparent"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          {t("common.refresh")}
-        </Button>
-      </div>
-
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-foreground">{logs.length}</div>
-          <div className="text-sm text-muted-foreground">{t("adminAudit.total")}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-primary">
-            {logs.filter((l) => l.action.startsWith("user.")).length}
-          </div>
-          <div className="text-sm text-muted-foreground">{t("adminAudit.userOps")}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-accent">
-            {logs.filter((l) => l.action.startsWith("texture.")).length}
-          </div>
-          <div className="text-sm text-muted-foreground">{t("adminAudit.textureOps")}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-destructive">
-            {logs.filter((l) => l.action.startsWith("admin.")).length}
-          </div>
-          <div className="text-sm text-muted-foreground">{t("adminAudit.adminOps")}</div>
-        </div>
-      </div>
-
-      {/* 数据表格 */}
-      <DataTable
-        columns={columns}
-        data={logs}
-        isLoading={isLoading}
-        onRetry={handleRefresh}
-        emptyMessage={t("adminAudit.empty")}
-        searchable
-        searchPlaceholder={t("auditLogs.searchPlaceholder")}
-        searchKeys={["action", "ip", "details"]}
+    <PageStack>
+      <PageHeader
+        title={t("auditLogs.title")}
+        description={t("adminAudit.description")}
+        actions={
+          <Button variant="outline" onClick={() => void handleRefresh()} disabled={isLoading}>
+            <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+            {t("common.refresh")}
+          </Button>
+        }
       />
-    </div>
+      <div className="stat-grid">
+        <div className="stat-card">
+          <strong>
+            <Count value={logs.length} unit={t("units.logs")} />
+          </strong>
+          <span>{t("adminAudit.total")}</span>
+        </div>
+        <div className="stat-card">
+          <strong>
+            <Count value={logs.filter((item) => item.action.startsWith("user.")).length} unit={t("units.logs")} />
+          </strong>
+          <span>{t("adminAudit.userOps")}</span>
+        </div>
+        <div className="stat-card">
+          <strong>
+            <Count value={logs.filter((item) => item.action.startsWith("texture.")).length} unit={t("units.logs")} />
+          </strong>
+          <span>{t("adminAudit.textureOps")}</span>
+        </div>
+        <div className="stat-card">
+          <strong>
+            <Count value={logs.filter((item) => item.action.startsWith("admin.")).length} unit={t("units.logs")} />
+          </strong>
+          <span>{t("adminAudit.adminOps")}</span>
+        </div>
+      </div>
+      <PagePanel>
+        <DataTable
+          columns={columns}
+          data={logs}
+          isLoading={isLoading}
+          onRetry={handleRefresh}
+          emptyMessage={t("adminAudit.empty")}
+          searchable
+          searchPlaceholder={t("auditLogs.searchPlaceholder")}
+          searchKeys={["action", "ip", "details"]}
+        />
+      </PagePanel>
+    </PageStack>
   )
 }

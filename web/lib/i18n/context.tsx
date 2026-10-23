@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react"
+import { createContext, useContext, useState, useCallback, useEffect } from "react"
+import type { ReactNode } from "react"
 import { type Locale, defaultLocale, locales } from "./config"
 import zhCN from "./locales/zh-CN"
 import en from "./locales/en"
@@ -39,9 +40,9 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
 
-const LOCALE_STORAGE_KEY = "craftskin-locale"
+const LOCALE_STORAGE_KEY = "yoloskin-locale"
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale)
   const [mounted, setMounted] = useState(false)
 

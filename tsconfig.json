@@ -1,15 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022", "WebWorker"],
+    "lib": [
+      "ESNext",
+      "WebWorker"
+    ],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
-    "types": ["@cloudflare/vitest-pool-workers/types", "./worker-configuration.d.ts"]
+    "types": [
+      "@cloudflare/vitest-plugin/types",
+      "./worker-configuration.d.ts"
+    ],
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "isolatedModules": true
   },
-  "include": ["worker/**/*.ts", "test/**/*.ts", "worker-configuration.d.ts"]
+  "include": [
+    "worker/**/*.ts",
+    "test/**/*.ts",
+    "worker-configuration.d.ts"
+  ]
 }

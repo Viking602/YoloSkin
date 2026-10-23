@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth/context"
 import { getCurrentUser, getOAuthProviders, getOAuthStartUrl, login } from "@/lib/api/services"
+import { FormBanner } from "@/components/page-header"
 import { useI18n } from "@/lib/i18n/context"
 
 export default function LoginPage() {
@@ -52,7 +53,7 @@ export default function LoginPage() {
     try {
       const response = await login(email.trim(), password)
       if (response.code !== 0) {
-        setError(response.message || t("auth.loginErrors.invalidCredentials"))
+        setError(response.code === 401 ? t("auth.loginErrors.invalidCredentials") : response.message || t("common.error"))
         return
       }
       setAuth("cookie-session", response.data.user, true)
@@ -65,8 +66,8 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthCard title={t("auth.login")} description="Cloudflare 安全会话登录">
-      {error && <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+    <AuthCard title={t("auth.login")} description={t("auth.loginDescription")}>
+      {error && <div className="mb-4"><FormBanner>{error}</FormBanner></div>}
       {(oauth.google || oauth.microsoft) && (
         <div className="mb-5 grid grid-cols-2 gap-3">
           <Button type="button" variant="outline" disabled={!oauth.google} onClick={() => void startOAuth("google")}>Google</Button>
@@ -86,7 +87,7 @@ export default function LoginPage() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="h-10 pl-10 pr-10" minLength={8} required />
-            <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-label="切换密码可见性">
+            <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-label={showPassword ? t("common.hidePassword") : t("common.showPassword")}>
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>

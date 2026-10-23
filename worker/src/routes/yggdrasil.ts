@@ -239,7 +239,7 @@ yggdrasilRoutes.post("/api/profiles/minecraft", async (c) => {
 yggdrasilRoutes.get("/", async (c) => {
   const settings = await getSettings(c.env.DB)
   return Response.json({
-    meta: { serverName: settings.site_name, implementationName: "YoloSkin Cloudflare", implementationVersion: "1.0.0" },
+    meta: { serverName: settings.site_name, implementationName: "YoloSkin", implementationVersion: "1.0.0" },
     skinDomains: [new URL(c.req.url).hostname],
     signaturePublickey: c.env.YGGDRASIL_PUBLIC_KEY?.replaceAll("\\n", "\n") ?? "",
   })

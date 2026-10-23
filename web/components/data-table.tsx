@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import type { ReactNode } from "react"
 
 import { useState, useMemo } from "react"
 import { Search, ChevronUp, ChevronDown, RefreshCw, AlertCircle } from "lucide-react"
@@ -21,7 +21,7 @@ export interface Column<T> {
   key: keyof T | string
   header: string
   sortable?: boolean
-  render?: (value: T[keyof T], row: T) => React.ReactNode
+  render?: (value: T[keyof T], row: T) => ReactNode
   width?: string
 }
 
@@ -227,7 +227,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     <TableCell key={String(col.key)} className="py-5 px-5">
                       {col.render
                         ? col.render(row[col.key as keyof T], row)
-                        : (row[col.key as keyof T] as React.ReactNode) ?? "-"}
+                        : (row[col.key as keyof T] as ReactNode) ?? "-"}
                     </TableCell>
                   ))}
                 </TableRow>

@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+import type { NextConfig } from "next"
 const nextConfig = {
   output: 'export',
   trailingSlash: true,
@@ -9,6 +9,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+} satisfies NextConfig
 
 export default nextConfig

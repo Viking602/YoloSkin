@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import type { ChangeEvent } from "react"
 
 import { useEffect, useRef, useState } from "react"
 import { Settings, Upload, Trash2, Save, Loader2, Check, Palette } from "lucide-react"
@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch"
 import { useSiteSettings } from "@/lib/site-settings/context"
 import { useI18n } from "@/lib/i18n/context"
 import Image from "next/image"
+import { LoadingState } from "@/components/state-views"
+import { PageHeader, PagePanel, PageStack } from "@/components/page-header"
 import { toast } from "sonner"
 
 const colorPresets = [
@@ -56,7 +58,7 @@ export default function SiteSettingsPage() {
     })
   }, [settings])
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
@@ -67,7 +69,7 @@ export default function SiteSettingsPage() {
     }
   }
 
-  const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFaviconUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
@@ -93,24 +95,16 @@ export default function SiteSettingsPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    )
+    return <LoadingState title={t.siteSettings.title} />
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t.siteSettings.title}</h1>
-        <p className="text-muted-foreground mt-1">{t.siteSettings.description}</p>
-      </div>
+    <PageStack>
+      <PageHeader title={t.siteSettings.title} description={t.siteSettings.description} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 基本信息 */}
-        <div className="mc-card p-6 space-y-6">
+        <PagePanel className="space-y-6">
           <div className="flex items-center gap-2 pb-4 border-b border-border">
             <Settings className="w-5 h-5 text-primary" />
             <h2 className="font-semibold text-foreground">{t.siteSettings.basicInfo}</h2>
@@ -222,11 +216,11 @@ export default function SiteSettingsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </PagePanel>
 
         {/* 外观设置 */}
         <div className="space-y-6">
-          <div className="mc-card p-6 space-y-6">
+          <PagePanel className="space-y-6">
             <div className="flex items-center gap-2 pb-4 border-b border-border">
               <Palette className="w-5 h-5 text-primary" />
               <h2 className="font-semibold text-foreground">{t.siteSettings.appearance}</h2>
@@ -278,10 +272,10 @@ export default function SiteSettingsPage() {
                 />
               </div>
             </div>
-          </div>
+          </PagePanel>
 
           {/* 注册设置 */}
-          <div className="mc-card p-6 space-y-6">
+          <PagePanel className="space-y-6">
             <div className="flex items-center gap-2 pb-4 border-b border-border">
               <Settings className="w-5 h-5 text-primary" />
               <h2 className="font-semibold text-foreground">{t.siteSettings.registration}</h2>
@@ -312,11 +306,10 @@ export default function SiteSettingsPage() {
                 />
               </div>
             </div>
-          </div>
+          </PagePanel>
         </div>
       </div>
 
-      {/* 保存按钮 */}
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={isSaving} className="min-w-32">
           {isSaving ? (
@@ -337,6 +330,6 @@ export default function SiteSettingsPage() {
           )}
         </Button>
       </div>
-    </div>
+    </PageStack>
   )
 }

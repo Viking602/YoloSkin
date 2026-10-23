@@ -5,6 +5,7 @@ import { encryptSecret, hashPassword, sha256, verifyPassword } from "../worker/s
 import { deliverPasswordResetEmail } from "../worker/src/services/email"
 import { handlePasswordResetQueue } from "../worker/src/queue"
 import type { PasswordResetQueueMessage } from "../worker/src/types"
+import { SKIN_PNG_BASE64 } from "./fixtures/skin"
 
 interface ApiEnvelope<T> {
   code: number
@@ -21,11 +22,7 @@ function sessionCookie(response: Response): string {
 }
 
 function png64x64(): File {
-  const bytes = new Uint8Array(24)
-  bytes.set([137, 80, 78, 71, 13, 10, 26, 10])
-  const view = new DataView(bytes.buffer)
-  view.setUint32(16, 64)
-  view.setUint32(20, 64)
+  const bytes = Uint8Array.from(atob(SKIN_PNG_BASE64), (char) => char.charCodeAt(0))
   return new File([bytes], "skin.png", { type: "image/png" })
 }
 
@@ -52,7 +49,7 @@ describe("YoloSkin Worker", () => {
     expect(body.data).toEqual(expect.objectContaining({ runtime: "cloudflare-workers", database: "d1", storage: "r2" }))
   })
 
-  it("registers, authenticates, creates a player, and streams an R2 texture", async () => {
+  it("registers, logs out, logs in, and applies a real R2 skin to a player", async () => {
     const password = "correct horse battery staple"
     const register = await exports.default.fetch("https://example.com/api/auth/register", {
       method: "POST",
@@ -60,7 +57,25 @@ describe("YoloSkin Worker", () => {
       body: JSON.stringify({ email: "worker-test@example.com", password, nickname: "Worker Test" }),
     })
     expect(register.status).toBe(201)
-    const cookie = sessionCookie(register)
+    const registrationCookie = sessionCookie(register)
+    expect(register.headers.get("Set-Cookie")).toContain("HttpOnly")
+    expect(register.headers.get("Set-Cookie")).toContain("SameSite=Lax")
+
+    const logout = await exports.default.fetch("https://example.com/api/auth/logout", {
+      method: "POST", headers: { Cookie: registrationCookie },
+    })
+    expect(logout.status).toBe(200)
+    const revokedSession = await exports.default.fetch("https://example.com/api/user", { headers: { Cookie: registrationCookie } })
+    expect(revokedSession.status).toBe(401)
+
+    const login = await exports.default.fetch("https://example.com/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "WORKER-TEST@example.com", password }),
+    })
+    expect(login.status).toBe(200)
+    const cookie = sessionCookie(login)
+    expect(cookie).not.toBe(registrationCookie)
 
     const current = await exports.default.fetch("https://example.com/api/user", { headers: { Cookie: cookie } })
     expect(current.status).toBe(200)
@@ -72,6 +87,7 @@ describe("YoloSkin Worker", () => {
       body: JSON.stringify({ player_name: "WorkerTest" }),
     })
     expect(playerResponse.status).toBe(201)
+    const player = (await playerResponse.json<ApiEnvelope<{ pid: number; uuid: string }>>()).data
 
     const yggLogin = await exports.default.fetch("https://example.com/api/yggdrasil/authserver/authenticate", {
       method: "POST",
@@ -99,13 +115,72 @@ describe("YoloSkin Worker", () => {
       body: form,
     })
     expect(upload.status).toBe(201)
-    const texture = (await upload.json<ApiEnvelope<{ hash: string }>>()).data
+    const texture = (await upload.json<ApiEnvelope<{ tid: number; hash: string }>>()).data
     expect(await env.TEXTURES.head(`textures/${texture.hash}.png`)).not.toBeNull()
 
     const download = await exports.default.fetch(`https://example.com/textures/${texture.hash}`)
     expect(download.status).toBe(200)
     expect(download.headers.get("Content-Type")).toBe("image/png")
-    expect((await download.arrayBuffer()).byteLength).toBe(24)
+    expect(await download.arrayBuffer()).toEqual(await png64x64().arrayBuffer())
+
+    const apply = await exports.default.fetch(`https://example.com/api/user/players/${player.pid}`, {
+      method: "PUT",
+      headers: { Cookie: cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ tid_skin: texture.tid }),
+    })
+    expect(apply.status).toBe(200)
+    const persisted = await env.DB.prepare("SELECT tid_skin FROM players WHERE pid = ?").bind(player.pid).first<{ tid_skin: number }>()
+    expect(persisted?.tid_skin).toBe(texture.tid)
+
+    const profile = await exports.default.fetch(`https://example.com/api/yggdrasil/sessionserver/session/minecraft/profile/${player.uuid}?unsigned=true`)
+    expect(profile.status).toBe(200)
+    const properties = await profile.json<{ properties: { value: string }[] }>()
+    const property = properties.properties[0]
+    if (!property) throw new Error("Expected Yggdrasil texture property")
+    const payload = JSON.parse(atob(property.value)) as { textures: { SKIN: { url: string } } }
+    expect(payload.textures.SKIN.url).toBe(`https://example.com/textures/${texture.hash}`)
+  })
+
+  it("rejects duplicate registration and incorrect passwords", async () => {
+    const account = { email: "duplicate@example.com", password: "duplicate-password", nickname: "Duplicate" }
+    const register = () => exports.default.fetch("https://example.com/api/auth/register", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(account),
+    })
+    expect((await register()).status).toBe(201)
+    const duplicate = await register()
+    expect(duplicate.status).toBe(409)
+    expect(duplicate.headers.get("Set-Cookie")).toBeNull()
+    const login = await exports.default.fetch("https://example.com/api/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: account.email, password: "incorrect-password" }),
+    })
+    expect(login.status).toBe(401)
+    expect(login.headers.get("Set-Cookie")).toBeNull()
+  })
+
+  it("rejects unauthenticated uploads, invalid files, wrong dimensions and oversized PNGs", async () => {
+    const unauthenticated = await exports.default.fetch("https://example.com/api/user/textures", { method: "POST" })
+    expect(unauthenticated.status).toBe(401)
+    const register = await exports.default.fetch("https://example.com/api/auth/register", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "upload-validation@example.com", password: "validation-password", nickname: "Validation" }),
+    })
+    const cookie = sessionCookie(register)
+    const upload = (file: File) => {
+      const form = new FormData()
+      form.set("name", "Invalid skin")
+      form.set("type", "skin")
+      form.set("file", file)
+      return exports.default.fetch("https://example.com/api/user/textures", { method: "POST", headers: { Cookie: cookie }, body: form })
+    }
+    expect((await upload(new File(["not a PNG"], "invalid.png", { type: "image/png" }))).status).toBe(400)
+    const wrongDimensions = await png64x64().arrayBuffer()
+    new DataView(wrongDimensions).setUint32(16, 128)
+    expect((await upload(new File([wrongDimensions], "wrong-size.png", { type: "image/png" }))).status).toBe(400)
+    expect((await upload(new File([new Uint8Array(2 * 1024 * 1024 + 1)], "too-large.png", { type: "image/png" }))).status).toBe(413)
+    const user = await env.DB.prepare("SELECT uid FROM users WHERE email = ?").bind("upload-validation@example.com").first<{ uid: number }>()
+    const count = await env.DB.prepare("SELECT COUNT(*) AS total FROM textures WHERE uploader = ?").bind(user?.uid).first<{ total: number }>()
+    expect(count?.total).toBe(0)
   })
 
   it("rejects protected API access without a session", async () => {
